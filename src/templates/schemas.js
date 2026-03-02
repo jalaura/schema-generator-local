@@ -281,10 +281,52 @@ function buildFAQ(data) {
   };
 }
 
+// ========== SHARED HELPERS ==========
+
+// Build breadcrumb from custom user fields, falling back to auto-generated items
+function buildCustomBreadcrumb(data, defaultItems, breadcrumbId) {
+  if (data.enableBreadcrumb === false) return null;
+
+  // Check if user has custom breadcrumb values
+  const hasCustom = data.breadcrumb1Name || data.breadcrumb2Name || data.breadcrumb3Name || data.breadcrumb4Name;
+
+  if (hasCustom) {
+    const items = [];
+    if (data.breadcrumb1Name) items.push({ name: data.breadcrumb1Name, url: data.breadcrumb1Url });
+    if (data.breadcrumb2Name) items.push({ name: data.breadcrumb2Name, url: data.breadcrumb2Url });
+    if (data.breadcrumb3Name) items.push({ name: data.breadcrumb3Name, url: data.breadcrumb3Url });
+    if (data.breadcrumb4Name) items.push({ name: data.breadcrumb4Name }); // Last item = current page, no URL
+    return buildBreadcrumb(items, breadcrumbId);
+  }
+
+  // Fall back to auto-generated default
+  return buildBreadcrumb(defaultItems, breadcrumbId);
+}
+
+// Optionally add FAQ to any graph if user has FAQ questions
+function maybeAddFAQ(graph, data) {
+  const faq = buildFAQ(data);
+  if (faq) graph.push(faq);
+}
+
+// Collect about entities from topic fields
+function collectAboutEntities(data) {
+  const aboutEntities = [];
+  if (data.topic1Name) aboutEntities.push({ name: data.topic1Name, sameAs: data.topic1Wiki });
+  if (data.topic2Name) aboutEntities.push({ name: data.topic2Name, sameAs: data.topic2Wiki });
+  return aboutEntities;
+}
+
 // ========== TEMPLATE GENERATORS ==========
 
 export function generateHomepage(data) {
   const graph = [buildOrganization(data), buildWebSite(data)];
+
+  // Breadcrumb
+  const bc = buildCustomBreadcrumb(data, [
+    { name: "Home" }
+  ], `${data.brandDomain}/#breadcrumb`);
+  if (bc) graph.push(bc);
 
   graph.push({
     "@type": "WebPage",
@@ -292,8 +334,12 @@ export function generateHomepage(data) {
     "url": data.brandDomain,
     "name": `${data.brandName}${data.brandDescription ? ' — ' + data.brandDescription : ''}`,
     "isPartOf": { "@id": `${data.brandDomain}/#website` },
-    "about": { "@id": `${data.brandDomain}/#organization` }
+    "about": { "@id": `${data.brandDomain}/#organization` },
+    ...(bc ? { "breadcrumb": { "@id": `${data.brandDomain}/#breadcrumb` } } : {})
   });
+
+  // FAQ
+  maybeAddFAQ(graph, data);
 
   return clean({ "@context": "https://schema.org", "@graph": graph });
 }
@@ -306,16 +352,23 @@ export function generateLocationPage(data) {
   }
 
   // Breadcrumb
-  graph.push(buildBreadcrumb([
+  const bcId = `${data.locationPageUrl || data.brandDomain}#breadcrumb`;
+  const bc = buildCustomBreadcrumb(data, [
     { name: "Home", url: `${data.brandDomain}/` },
     { name: "Locations", url: `${data.brandDomain}/locations/` },
     { name: `${data.locationCity || ''} ${data.locationStateAbbr || ''}`.trim() }
-  ], `${data.locationPageUrl || data.brandDomain}#breadcrumb`));
+  ], bcId);
+  if (bc) graph.push(bc);
 
   // Article
-  const aboutEntities = [];
-  if (data.locationCity) aboutEntities.push({ name: `${data.locationCity}, ${data.locationState || ''}`, sameAs: data.locationWiki });
+  const aboutEntities = collectAboutEntities(data);
+  if (data.locationCity && !aboutEntities.find(e => e.name?.includes(data.locationCity))) {
+    aboutEntities.push({ name: `${data.locationCity}, ${data.locationState || ''}`, sameAs: data.locationWiki });
+  }
   graph.push(buildArticle(data, aboutEntities));
+
+  // FAQ
+  maybeAddFAQ(graph, data);
 
   return clean({ "@context": "https://schema.org", "@graph": graph });
 }
@@ -325,15 +378,23 @@ export function generateServicePage(data) {
 
   graph.push(buildService(data));
 
-  graph.push(buildBreadcrumb([
+  // Breadcrumb
+  const bcId = `${data.servicePageUrl || data.brandDomain}#breadcrumb`;
+  const bc = buildCustomBreadcrumb(data, [
     { name: "Home", url: `${data.brandDomain}/` },
     { name: "Services", url: `${data.brandDomain}/services/` },
     { name: data.serviceName || "Service" }
-  ], `${data.servicePageUrl || data.brandDomain}#breadcrumb`));
+  ], bcId);
+  if (bc) graph.push(bc);
 
-  const aboutEntities = [];
-  if (data.serviceName) aboutEntities.push({ name: data.serviceName, sameAs: data.serviceWiki });
+  const aboutEntities = collectAboutEntities(data);
+  if (data.serviceName && !aboutEntities.find(e => e.name === data.serviceName)) {
+    aboutEntities.push({ name: data.serviceName, sameAs: data.serviceWiki });
+  }
   graph.push(buildArticle(data, aboutEntities));
+
+  // FAQ
+  maybeAddFAQ(graph, data);
 
   return clean({ "@context": "https://schema.org", "@graph": graph });
 }
@@ -347,17 +408,27 @@ export function generateServiceLocationCombo(data) {
 
   graph.push(buildService(data));
 
-  graph.push(buildBreadcrumb([
+  // Breadcrumb
+  const bcId = `${data.pageUrl || data.brandDomain}#breadcrumb`;
+  const bc = buildCustomBreadcrumb(data, [
     { name: "Home", url: `${data.brandDomain}/` },
     { name: "Services", url: `${data.brandDomain}/services/` },
     { name: data.serviceName || "Service", url: data.servicePageUrl },
     { name: `${data.locationCity || ''} ${data.locationStateAbbr || ''}`.trim() }
-  ], `${data.pageUrl || data.brandDomain}#breadcrumb`));
+  ], bcId);
+  if (bc) graph.push(bc);
 
-  const aboutEntities = [];
-  if (data.serviceName) aboutEntities.push({ name: data.serviceName, sameAs: data.serviceWiki });
-  if (data.locationCity) aboutEntities.push({ name: `${data.locationCity}, ${data.locationState || ''}`, sameAs: data.locationWiki });
+  const aboutEntities = collectAboutEntities(data);
+  if (data.serviceName && !aboutEntities.find(e => e.name === data.serviceName)) {
+    aboutEntities.push({ name: data.serviceName, sameAs: data.serviceWiki });
+  }
+  if (data.locationCity && !aboutEntities.find(e => e.name?.includes(data.locationCity))) {
+    aboutEntities.push({ name: `${data.locationCity}, ${data.locationState || ''}`, sameAs: data.locationWiki });
+  }
   graph.push(buildArticle(data, aboutEntities));
+
+  // FAQ
+  maybeAddFAQ(graph, data);
 
   return clean({ "@context": "https://schema.org", "@graph": graph });
 }
@@ -372,10 +443,13 @@ export function generateMultiLocationHub(data) {
     }
   });
 
-  graph.push(buildBreadcrumb([
+  // Breadcrumb
+  const bcId = `${data.brandDomain}/locations/#breadcrumb`;
+  const bc = buildCustomBreadcrumb(data, [
     { name: "Home", url: `${data.brandDomain}/` },
     { name: "Locations" }
-  ], `${data.brandDomain}/locations/#breadcrumb`));
+  ], bcId);
+  if (bc) graph.push(bc);
 
   graph.push(clean({
     "@type": "WebPage",
@@ -385,8 +459,11 @@ export function generateMultiLocationHub(data) {
     "description": `${data.brandName} service locations across the United States.`,
     "isPartOf": { "@id": `${data.brandDomain}/#website` },
     "about": { "@id": `${data.brandDomain}/#organization` },
-    "breadcrumb": { "@id": `${data.brandDomain}/locations/#breadcrumb` }
+    ...(bc ? { "breadcrumb": { "@id": bcId } } : {})
   }));
+
+  // FAQ
+  maybeAddFAQ(graph, data);
 
   return clean({ "@context": "https://schema.org", "@graph": graph });
 }
@@ -394,16 +471,20 @@ export function generateMultiLocationHub(data) {
 export function generateBlogArticle(data) {
   const graph = [buildOrganization(data)];
 
-  graph.push(buildBreadcrumb([
+  // Breadcrumb
+  const bcId = `${data.pageUrl || data.brandDomain}#breadcrumb`;
+  const bc = buildCustomBreadcrumb(data, [
     { name: "Home", url: `${data.brandDomain}/` },
     { name: data.blogSectionName || "Blog", url: `${data.brandDomain}/${data.blogSectionSlug || 'blog'}/` },
     { name: data.pageTitle || "Article" }
-  ], `${data.pageUrl || data.brandDomain}#breadcrumb`));
+  ], bcId);
+  if (bc) graph.push(bc);
 
-  const aboutEntities = [];
-  if (data.topic1Name) aboutEntities.push({ name: data.topic1Name, sameAs: data.topic1Wiki });
-  if (data.topic2Name) aboutEntities.push({ name: data.topic2Name, sameAs: data.topic2Wiki });
+  const aboutEntities = collectAboutEntities(data);
   graph.push(buildArticle(data, aboutEntities));
+
+  // FAQ
+  maybeAddFAQ(graph, data);
 
   return clean({ "@context": "https://schema.org", "@graph": graph });
 }
@@ -411,17 +492,19 @@ export function generateBlogArticle(data) {
 export function generateFaqPage(data) {
   const graph = [buildOrganization(data)];
 
-  graph.push(buildBreadcrumb([
+  // Breadcrumb
+  const bcId = `${data.pageUrl || data.brandDomain}#breadcrumb`;
+  const bc = buildCustomBreadcrumb(data, [
     { name: "Home", url: `${data.brandDomain}/` },
     { name: data.faqSectionName || "FAQ", url: `${data.brandDomain}/${data.faqSectionSlug || 'faq'}/` },
     { name: data.pageTitle || "FAQ" }
-  ], `${data.pageUrl || data.brandDomain}#breadcrumb`));
+  ], bcId);
+  if (bc) graph.push(bc);
 
-  const faq = buildFAQ(data);
-  if (faq) graph.push(faq);
+  // FAQ (always included for the FAQ template)
+  maybeAddFAQ(graph, data);
 
-  const aboutEntities = [];
-  if (data.topic1Name) aboutEntities.push({ name: data.topic1Name, sameAs: data.topic1Wiki });
+  const aboutEntities = collectAboutEntities(data);
   graph.push(buildArticle(data, aboutEntities));
 
   return clean({ "@context": "https://schema.org", "@graph": graph });
@@ -436,14 +519,24 @@ export function generateOrganizationOnly(data) {
     graph.push(buildService(data));
   }
 
+  // Breadcrumb
+  const bc = buildCustomBreadcrumb(data, [
+    { name: "Home" }
+  ], `${data.brandDomain}/#breadcrumb`);
+  if (bc) graph.push(bc);
+
   graph.push({
     "@type": "WebPage",
     "@id": `${data.brandDomain}/#webpage`,
     "url": data.brandDomain,
     "name": data.brandName,
     "isPartOf": { "@id": `${data.brandDomain}/#website` },
-    "about": { "@id": `${data.brandDomain}/#organization` }
+    "about": { "@id": `${data.brandDomain}/#organization` },
+    ...(bc ? { "breadcrumb": { "@id": `${data.brandDomain}/#breadcrumb` } } : {})
   });
+
+  // FAQ
+  maybeAddFAQ(graph, data);
 
   return clean({ "@context": "https://schema.org", "@graph": graph });
 }
