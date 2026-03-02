@@ -22,7 +22,7 @@ const sections = [
 
 function SideNav({ active }) {
   return (
-    <nav className="hidden lg:block sticky top-6 w-56 shrink-0">
+    <nav className="hidden lg:block sticky top-6 w-56 shrink-0 self-start max-h-[calc(100vh-3rem)] overflow-y-auto">
       <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Documentation</h3>
       <ul className="space-y-0.5 text-sm">
         {sections.map(s => (
@@ -154,7 +154,7 @@ export default function DocsPage() {
 
       {/* Content */}
       <main className="flex-1 max-w-7xl mx-auto w-full px-4 py-8 sm:px-6 lg:px-8">
-        <div className="flex gap-8">
+        <div className="flex gap-8 items-start">
           <SideNav active={active} />
 
           <article className="flex-1 min-w-0 max-w-3xl">
