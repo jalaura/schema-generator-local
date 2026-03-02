@@ -109,15 +109,15 @@ function loadSavedTemplate() {
 export default function App() {
   const [templateId, setTemplateId] = useState(loadSavedTemplate);
   const [formData, setFormData] = useState(loadSavedData);
-  const [page, setPage] = useState(window.location.hash === '#/docs' ? 'docs' : 'generator');
+  const [page, setPage] = useState(window.location.pathname === '/docs' ? 'docs' : 'generator');
 
-  // Listen for hash changes
+  // Listen for path changes (popstate for back/forward)
   useEffect(() => {
-    const handleHash = () => {
-      setPage(window.location.hash === '#/docs' ? 'docs' : 'generator');
+    const handleNav = () => {
+      setPage(window.location.pathname === '/docs' ? 'docs' : 'generator');
     };
-    window.addEventListener('hashchange', handleHash);
-    return () => window.removeEventListener('hashchange', handleHash);
+    window.addEventListener('popstate', handleNav);
+    return () => window.removeEventListener('popstate', handleNav);
   }, []);
 
   // Save to localStorage on change
@@ -253,7 +253,7 @@ export default function App() {
         <div className="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8 flex items-center justify-between text-xs text-gray-500">
           <span>Local Business Schema Generator — Built for Local SEO professionals</span>
           <div className="flex gap-4">
-            <a href="#/docs" className="hover:text-brand-600">Documentation</a>
+            <a href="/docs" className="hover:text-brand-600" onClick={(e) => { e.preventDefault(); window.history.pushState({}, '', '/docs'); setPage('docs'); window.scrollTo(0, 0); }}>Documentation</a>
             <a href="https://schema.org/LocalBusiness" target="_blank" rel="noopener" className="hover:text-brand-600">Schema.org Reference</a>
             <a href="https://developers.google.com/search/docs/appearance/structured-data/local-business" target="_blank" rel="noopener" className="hover:text-brand-600">Google Docs</a>
           </div>
