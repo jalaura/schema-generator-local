@@ -34,8 +34,16 @@ npm run build
 
 Output goes to `dist/` folder.
 
-### Cloudflare Pages
+### Cloudflare Pages Deployment
 
-1. Push to GitHub
-2. In Cloudflare Pages: connect repo, set build command to `npm run build`, output directory to `dist`
-3. Deploy
+1. Push this folder to a GitHub repository
+2. Go to **Cloudflare Dashboard → Workers & Pages → Create → Pages**
+3. Connect your GitHub repo and use these settings:
+
+| Setting | Value |
+|---|---|
+| **Framework preset** | `React (Vite)` |
+| **Build command** | `npm run build` |
+| **Build output directory** | `dist` |
+
+4. Click **Save and Deploy**
