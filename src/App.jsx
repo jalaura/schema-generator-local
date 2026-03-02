@@ -1,0 +1,227 @@
+import React, { useState, useMemo, useEffect } from 'react';
+import Header from './components/Header';
+import TemplateSelector from './components/TemplateSelector';
+import SchemaForm from './components/SchemaForm';
+import JsonPreview from './components/JsonPreview';
+import { TEMPLATES } from './templates/schemas';
+import { validateSchema } from './utils/validator';
+
+const DEFAULT_DATA = {
+  gbpStatus: 'yes-address',
+  businessType: 'LocalBusiness',
+  brandName: '',
+  brandDomain: '',
+  brandDescription: '',
+  brandLogoUrl: '',
+  brandPhone: '',
+  brandEmail: '',
+  addressCountry: 'US',
+  hqStreet: '',
+  hqCity: '',
+  hqState: '',
+  hqZip: '',
+  facebookUrl: '',
+  instagramUrl: '',
+  twitterUrl: '',
+  youtubeUrl: '',
+  linkedinUrl: '',
+  yelpUrl: '',
+  foundingDate: '',
+  locationCity: '',
+  locationState: '',
+  locationStateAbbr: '',
+  locationSlug: '',
+  locationStreet: '',
+  locationZip: '',
+  locationPhone: '',
+  locationLat: '',
+  locationLng: '',
+  locationPageUrl: '',
+  locationImage: '',
+  locationWiki: '',
+  stateWiki: '',
+  serviceName: '',
+  serviceSlug: '',
+  serviceDescription: '',
+  serviceType: '',
+  serviceCategory: '',
+  servicePageUrl: '',
+  serviceImage: '',
+  serviceWiki: '',
+  pageTitle: '',
+  pageDescription: '',
+  pageUrl: '',
+  pageImage: '',
+  datePublished: '',
+  dateModified: '',
+  authorName: '',
+  authorUrl: '',
+  authorTitle: '',
+  blogSectionName: 'Blog',
+  blogSectionSlug: 'blog',
+  faqSectionName: 'FAQ',
+  faqSectionSlug: 'faq',
+  topic1Name: '',
+  topic1Wiki: '',
+  topic2Name: '',
+  topic2Wiki: '',
+  hoursDays: '["Monday","Tuesday","Wednesday","Thursday","Friday"]',
+  hoursDaysPreset: 'Mon-Fri',
+  hoursOpen: '08:00',
+  hoursClose: '17:00',
+  priceRange: '',
+  paymentAccepted: '',
+  hasMap: '',
+  searchUrlTemplate: '',
+  contactPointPhone: '',
+  contactPointType: 'customer service',
+  contactLanguages: '',
+  locations: [],
+  faqs: [{ question: '', answer: '' }, { question: '', answer: '' }, { question: '', answer: '' }],
+};
+
+// Persist form data to localStorage
+function loadSavedData() {
+  try {
+    const saved = localStorage.getItem('schema-generator-data');
+    if (saved) return { ...DEFAULT_DATA, ...JSON.parse(saved) };
+  } catch {}
+  return { ...DEFAULT_DATA };
+}
+
+function loadSavedTemplate() {
+  try {
+    return localStorage.getItem('schema-generator-template') || 'homepage';
+  } catch {
+    return 'homepage';
+  }
+}
+
+export default function App() {
+  const [templateId, setTemplateId] = useState(loadSavedTemplate);
+  const [formData, setFormData] = useState(loadSavedData);
+
+  // Save to localStorage on change
+  useEffect(() => {
+    try {
+      localStorage.setItem('schema-generator-data', JSON.stringify(formData));
+      localStorage.setItem('schema-generator-template', templateId);
+    } catch {}
+  }, [formData, templateId]);
+
+  const template = TEMPLATES.find(t => t.id === templateId);
+
+  // Generate schema
+  const schema = useMemo(() => {
+    if (!template || !formData.brandName || !formData.brandDomain) return null;
+    try {
+      return template.generate(formData);
+    } catch (err) {
+      console.error('Schema generation error:', err);
+      return null;
+    }
+  }, [formData, templateId]);
+
+  // Validate
+  const validation = useMemo(() => {
+    if (!schema) return null;
+    return validateSchema(schema, templateId);
+  }, [schema, templateId]);
+
+  const handleReset = () => {
+    if (window.confirm('Reset all form fields? This cannot be undone.')) {
+      setFormData({ ...DEFAULT_DATA });
+    }
+  };
+
+  return (
+    <div className="min-h-screen flex flex-col">
+      <Header />
+
+      <main className="flex-1 max-w-7xl mx-auto w-full px-4 py-6 sm:px-6 lg:px-8">
+        {/* Template Selector */}
+        <div className="mb-6">
+          <TemplateSelector selected={templateId} onSelect={setTemplateId} />
+        </div>
+
+        {/* Two-column layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Left: Form */}
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-gray-800">2. Fill in Your Details</h2>
+              <button
+                onClick={handleReset}
+                className="text-xs text-gray-400 hover:text-red-500 transition-colors"
+              >
+                Reset All
+              </button>
+            </div>
+
+            {/* Quick start hint */}
+            {!formData.brandName && (
+              <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-700">
+                <strong>Quick start:</strong> Enter your business name and website URL to see the JSON-LD preview update in real time.
+              </div>
+            )}
+
+            <SchemaForm
+              data={formData}
+              onChange={setFormData}
+              template={template}
+            />
+          </div>
+
+          {/* Right: Preview */}
+          <div>
+            <h2 className="text-lg font-semibold text-gray-800 mb-4">3. Generated JSON-LD</h2>
+            <div className="sticky top-4">
+              <JsonPreview schema={schema} validation={validation} />
+            </div>
+          </div>
+        </div>
+
+        {/* Tips section */}
+        <div className="mt-12 mb-8 p-6 bg-gray-50 border border-gray-200 rounded-xl">
+          <h3 className="text-base font-semibold text-gray-800 mb-3">Implementation Tips</h3>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 text-sm text-gray-600">
+            <div>
+              <h4 className="font-medium text-gray-700 mb-1">Where to place it</h4>
+              <p>Paste the <code className="text-xs bg-gray-200 px-1 rounded">&lt;script&gt;</code> tag in your page's <code className="text-xs bg-gray-200 px-1 rounded">&lt;head&gt;</code> or <code className="text-xs bg-gray-200 px-1 rounded">&lt;body&gt;</code> — Google processes both equally.</p>
+            </div>
+            <div>
+              <h4 className="font-medium text-gray-700 mb-1">NAP consistency</h4>
+              <p>Your name, address, and phone must match exactly across your schema, GBP, Yelp, and all directory listings.</p>
+            </div>
+            <div>
+              <h4 className="font-medium text-gray-700 mb-1">Content must match</h4>
+              <p>Only include schema for information visible on the page. Google can issue manual actions for misleading markup.</p>
+            </div>
+            <div>
+              <h4 className="font-medium text-gray-700 mb-1">Test before deploying</h4>
+              <p>Always validate with the Schema.org Validator (syntax) and Google Rich Results Test (eligibility).</p>
+            </div>
+            <div>
+              <h4 className="font-medium text-gray-700 mb-1">AI search visibility</h4>
+              <p>Schema with sameAs links to Wikipedia/Wikidata gets 2.5x higher citation rates in AI-generated answers.</p>
+            </div>
+            <div>
+              <h4 className="font-medium text-gray-700 mb-1">Keep it updated</h4>
+              <p>Update <code className="text-xs bg-gray-200 px-1 rounded">dateModified</code> whenever you change page content — AI systems use this for freshness.</p>
+            </div>
+          </div>
+        </div>
+      </main>
+
+      <footer className="bg-gray-100 border-t border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8 flex items-center justify-between text-xs text-gray-500">
+          <span>Local Business Schema Generator — Built for Local SEO professionals</span>
+          <div className="flex gap-4">
+            <a href="https://schema.org/LocalBusiness" target="_blank" rel="noopener" className="hover:text-brand-600">Schema.org Reference</a>
+            <a href="https://developers.google.com/search/docs/appearance/structured-data/local-business" target="_blank" rel="noopener" className="hover:text-brand-600">Google Docs</a>
+          </div>
+        </div>
+      </footer>
+    </div>
+  );
+}
