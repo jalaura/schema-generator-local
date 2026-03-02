@@ -40,11 +40,11 @@ function TextArea({ label, name, value, onChange, placeholder, hint, rows = 2 })
 function Section({ title, children, defaultOpen = true }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <div className="border border-gray-200 rounded-lg overflow-hidden">
+    <div className="border border-gray-200 rounded-lg overflow-visible">
       <button
         type="button"
         onClick={() => setOpen(!open)}
-        className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 text-sm font-semibold text-gray-700 hover:bg-gray-100 transition-colors"
+        className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 text-sm font-semibold text-gray-700 hover:bg-gray-100 transition-colors rounded-t-lg"
       >
         {title}
         <svg className={`w-4 h-4 transition-transform ${open ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -118,8 +118,10 @@ export default function SchemaForm({ data, onChange, template }) {
   const showMultiLocation = tmpl.multiLocation;
   const showService = tmpl.requiresService;
   const showBlog = tmpl.id === 'blog';
-  const showFaq = tmpl.id === 'faq';
   const showOrgOnly = tmpl.id === 'org-only';
+  // FAQ and Breadcrumb are available on ALL page types
+  const showFaq = true;
+  const showBreadcrumb = true;
 
   return (
     <div className="space-y-4">
@@ -335,25 +337,50 @@ export default function SchemaForm({ data, onChange, template }) {
         </Section>
       )}
 
-      {/* Topic Entities (for blog/faq) */}
-      {(showBlog || showFaq) && (
-        <Section title="Topic Entities (Knowledge Graph)" defaultOpen={false}>
-          <Field label="Topic 1 Name" name="topic1Name" value={data.topic1Name} onChange={set} placeholder="Roof Replacement" half />
-          <Field label="Topic 1 Wikipedia" name="topic1Wiki" value={data.topic1Wiki} onChange={set} placeholder="https://en.wikipedia.org/wiki/Roofing" half />
-          {showBlog && (
+      {/* Topic Entities */}
+      <Section title="Topic Entities (Knowledge Graph)" defaultOpen={false}>
+        <Field label="Topic 1 Name" name="topic1Name" value={data.topic1Name} onChange={set} placeholder="Roof Replacement" half />
+        <Field label="Topic 1 Wikipedia" name="topic1Wiki" value={data.topic1Wiki} onChange={set} placeholder="https://en.wikipedia.org/wiki/Roofing" half />
+        <Field label="Topic 2 Name" name="topic2Name" value={data.topic2Name} onChange={set} placeholder="Solar Panel" half />
+        <Field label="Topic 2 Wikipedia" name="topic2Wiki" value={data.topic2Wiki} onChange={set} placeholder="https://en.wikipedia.org/wiki/Solar_panel" half />
+      </Section>
+
+      {/* Breadcrumb — available on all page types */}
+      {showBreadcrumb && (
+        <Section title="Breadcrumb Navigation" defaultOpen={false}>
+          <div className="sm:col-span-2">
+            <p className="text-xs text-gray-500 mb-3">Define the breadcrumb trail for this page. The generator will auto-build a default breadcrumb based on the page type, but you can customize it here.</p>
+            <div className="flex items-center gap-2 mb-2">
+              <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={data.enableBreadcrumb !== false}
+                  onChange={e => set('enableBreadcrumb', e.target.checked)}
+                  className="text-brand-600 focus:ring-brand-500 rounded"
+                />
+                Include BreadcrumbList in schema
+              </label>
+            </div>
+          </div>
+          {data.enableBreadcrumb !== false && (
             <>
-              <Field label="Topic 2 Name" name="topic2Name" value={data.topic2Name} onChange={set} placeholder="Solar Panel" half />
-              <Field label="Topic 2 Wikipedia" name="topic2Wiki" value={data.topic2Wiki} onChange={set} placeholder="https://en.wikipedia.org/wiki/Solar_panel" half />
+              <Field label="Breadcrumb Level 1 Name" name="breadcrumb1Name" value={data.breadcrumb1Name} onChange={set} placeholder="Home" half />
+              <Field label="Breadcrumb Level 1 URL" name="breadcrumb1Url" value={data.breadcrumb1Url} onChange={set} placeholder="https://acmeplumbing.com/" half />
+              <Field label="Breadcrumb Level 2 Name" name="breadcrumb2Name" value={data.breadcrumb2Name} onChange={set} placeholder="Services" half />
+              <Field label="Breadcrumb Level 2 URL" name="breadcrumb2Url" value={data.breadcrumb2Url} onChange={set} placeholder="https://acmeplumbing.com/services/" half />
+              <Field label="Breadcrumb Level 3 Name" name="breadcrumb3Name" value={data.breadcrumb3Name} onChange={set} placeholder="Roof Repair" half />
+              <Field label="Breadcrumb Level 3 URL" name="breadcrumb3Url" value={data.breadcrumb3Url} onChange={set} placeholder="https://acmeplumbing.com/services/roof-repair/" half />
+              <Field label="Breadcrumb Level 4 (Current Page)" name="breadcrumb4Name" value={data.breadcrumb4Name} onChange={set} placeholder="Nashville TN" hint="Last item — no URL needed (current page)" />
             </>
           )}
         </Section>
       )}
 
-      {/* FAQ Section */}
+      {/* FAQ Section — available on all page types */}
       {showFaq && (
-        <Section title="FAQ Questions & Answers" defaultOpen={true}>
+        <Section title="FAQ Questions & Answers" defaultOpen={tmpl.id === 'faq'}>
           <div className="sm:col-span-2 space-y-3">
-            <p className="text-xs text-gray-500">Note: FAQ rich results are now limited to government and health sites, but FAQ schema still helps AI search engines extract your content.</p>
+            <p className="text-xs text-gray-500">Add FAQ questions to any page type. FAQ schema helps AI search engines extract your content and can generate rich results for eligible sites.</p>
             {(data.faqs || []).map((faq, i) => (
               <div key={i} className="border border-gray-200 rounded-lg p-3 bg-gray-50/50">
                 <div className="flex justify-between items-center mb-2">
@@ -385,8 +412,8 @@ export default function SchemaForm({ data, onChange, template }) {
         </Section>
       )}
 
-      {/* FAQ Section Name */}
-      {showFaq && (
+      {/* FAQ Page Settings — only for dedicated FAQ template */}
+      {tmpl.id === 'faq' && (
         <Section title="FAQ Page Settings" defaultOpen={false}>
           <Field label="FAQ Section Name" name="faqSectionName" value={data.faqSectionName} onChange={set} placeholder="FAQ" half />
           <Field label="FAQ Section Slug" name="faqSectionSlug" value={data.faqSectionSlug} onChange={set} placeholder="faq" half />
