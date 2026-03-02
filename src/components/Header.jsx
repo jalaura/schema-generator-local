@@ -8,7 +8,7 @@ export default function Header({ onNewClient }) {
           <div>
             <a href="/" className="inline-block">
               <h1 className="text-2xl font-bold tracking-tight">
-                <span className="text-brand-300">&lt;/&gt;</span> Local Business Schema Generator
+                <span className="text-brand-300">&lt;/&gt;</span>Stackable Local Business Schema Generator
               </h1>
             </a>
             <p className="mt-1 text-brand-200 text-sm">
