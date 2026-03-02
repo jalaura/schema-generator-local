@@ -1,11 +1,15 @@
 import React, { useState } from 'react';
 import BusinessTypePicker from './BusinessTypePicker';
+import Tooltip from './Tooltip';
+import { FIELD_TIPS, SECTION_TIPS } from '../data/tooltips';
 
-function Field({ label, name, value, onChange, required, placeholder, type = 'text', hint, half }) {
+function Field({ label, name, value, onChange, required, placeholder, type = 'text', hint, half, tip }) {
+  const tooltip = tip || FIELD_TIPS[name];
   return (
     <div className={half ? 'sm:col-span-1' : 'sm:col-span-2'}>
       <label className="block text-sm font-medium text-gray-700 mb-1">
         {label} {required && <span className="text-red-400">*</span>}
+        {tooltip && <Tooltip text={tooltip} />}
       </label>
       <input
         type={type}
@@ -20,10 +24,14 @@ function Field({ label, name, value, onChange, required, placeholder, type = 'te
   );
 }
 
-function TextArea({ label, name, value, onChange, placeholder, hint, rows = 2 }) {
+function TextArea({ label, name, value, onChange, placeholder, hint, rows = 2, tip }) {
+  const tooltip = tip || FIELD_TIPS[name];
   return (
     <div className="sm:col-span-2">
-      <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
+      <label className="block text-sm font-medium text-gray-700 mb-1">
+        {label}
+        {tooltip && <Tooltip text={tooltip} />}
+      </label>
       <textarea
         name={name}
         value={value || ''}
@@ -37,7 +45,7 @@ function TextArea({ label, name, value, onChange, placeholder, hint, rows = 2 })
   );
 }
 
-function Section({ title, children, defaultOpen = true }) {
+function Section({ title, children, defaultOpen = true, sectionTip }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
     <div className="border border-gray-200 rounded-lg overflow-visible">
@@ -46,7 +54,10 @@ function Section({ title, children, defaultOpen = true }) {
         onClick={() => setOpen(!open)}
         className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 text-sm font-semibold text-gray-700 hover:bg-gray-100 transition-colors rounded-t-lg"
       >
-        {title}
+        <span className="flex items-center">
+          {title}
+          {sectionTip && <Tooltip text={sectionTip} />}
+        </span>
         <svg className={`w-4 h-4 transition-transform ${open ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
         </svg>
@@ -127,7 +138,7 @@ export default function SchemaForm({ data, onChange, template }) {
     <div className="space-y-4">
       {/* GBP Status */}
       {(showGBP || showOrgOnly) && (
-        <Section title="Google Business Profile Status" defaultOpen={true}>
+        <Section title="Google Business Profile Status" defaultOpen={true} sectionTip={SECTION_TIPS.gbpStatus}>
           <div className="sm:col-span-2 space-y-2">
             {GBP_OPTIONS.map(opt => (
               <label
@@ -156,7 +167,7 @@ export default function SchemaForm({ data, onChange, template }) {
 
       {/* Business Type */}
       {(showGBP || showOrgOnly) && data.gbpStatus !== 'no-address' && (
-        <Section title="Business Type" defaultOpen={true}>
+        <Section title="Business Type" defaultOpen={true} sectionTip={SECTION_TIPS.businessType}>
           <div className="sm:col-span-2">
             <BusinessTypePicker value={data.businessType} onChange={(v) => set('businessType', v)} />
           </div>
@@ -164,7 +175,7 @@ export default function SchemaForm({ data, onChange, template }) {
       )}
 
       {/* Organization / Brand Info */}
-      <Section title="Organization / Brand Info" defaultOpen={true}>
+      <Section title="Organization / Brand Info" defaultOpen={true} sectionTip={SECTION_TIPS.orgInfo}>
         <Field label="Business Name" name="brandName" value={data.brandName} onChange={set} required placeholder="Acme Plumbing" />
         <Field label="Website URL" name="brandDomain" value={data.brandDomain} onChange={set} required placeholder="https://acmeplumbing.com" hint="No trailing slash" />
         <TextArea label="Business Description" name="brandDescription" value={data.brandDescription} onChange={set} placeholder="1-2 sentence description of your business" />
@@ -175,7 +186,7 @@ export default function SchemaForm({ data, onChange, template }) {
       </Section>
 
       {/* HQ Address */}
-      <Section title="Headquarters Address" defaultOpen={false}>
+      <Section title="Headquarters Address" defaultOpen={false} sectionTip={SECTION_TIPS.hqAddress}>
         <Field label="Street Address" name="hqStreet" value={data.hqStreet} onChange={set} placeholder="123 Main Street" />
         <Field label="City" name="hqCity" value={data.hqCity} onChange={set} placeholder="Denver" half />
         <Field label="State" name="hqState" value={data.hqState} onChange={set} placeholder="CO" half />
@@ -184,7 +195,7 @@ export default function SchemaForm({ data, onChange, template }) {
       </Section>
 
       {/* Social Profiles */}
-      <Section title="Social Profiles (sameAs)" defaultOpen={false}>
+      <Section title="Social Profiles (sameAs)" defaultOpen={false} sectionTip={SECTION_TIPS.socialProfiles}>
         <Field label="Facebook" name="facebookUrl" value={data.facebookUrl} onChange={set} placeholder="https://facebook.com/acmeplumbing" half />
         <Field label="Instagram" name="instagramUrl" value={data.instagramUrl} onChange={set} placeholder="https://instagram.com/acmeplumbing" half />
         <Field label="X / Twitter" name="twitterUrl" value={data.twitterUrl} onChange={set} placeholder="https://x.com/acmeplumbing" half />
@@ -195,7 +206,7 @@ export default function SchemaForm({ data, onChange, template }) {
 
       {/* Single Location */}
       {showLocation && data.gbpStatus !== 'no-address' && (
-        <Section title="Location Details" defaultOpen={true}>
+        <Section title="Location Details" defaultOpen={true} sectionTip={SECTION_TIPS.locationDetails}>
           <Field label="City" name="locationCity" value={data.locationCity} onChange={set} required placeholder="Nashville" half />
           <Field label="State (Full)" name="locationState" value={data.locationState} onChange={set} placeholder="Tennessee" half />
           <Field label="State Abbreviation" name="locationStateAbbr" value={data.locationStateAbbr} onChange={set} placeholder="TN" half />
@@ -276,9 +287,12 @@ export default function SchemaForm({ data, onChange, template }) {
 
       {/* Business Hours */}
       {(showGBP || showLocation || showMultiLocation) && data.gbpStatus !== 'no-address' && (
-        <Section title="Business Hours" defaultOpen={false}>
+        <Section title="Business Hours" defaultOpen={false} sectionTip={SECTION_TIPS.businessHours}>
           <div className="sm:col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Days Open</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Days Open
+              <Tooltip text={FIELD_TIPS.hoursDaysPreset} />
+            </label>
             <select
               value={data.hoursDaysPreset || 'Mon-Fri'}
               onChange={e => {
@@ -304,7 +318,7 @@ export default function SchemaForm({ data, onChange, template }) {
 
       {/* Service Info */}
       {showService && (
-        <Section title="Service Details" defaultOpen={true}>
+        <Section title="Service Details" defaultOpen={true} sectionTip={SECTION_TIPS.serviceDetails}>
           <Field label="Service Name" name="serviceName" value={data.serviceName} onChange={set} required placeholder="Roof Replacement" />
           <Field label="Service URL Slug" name="serviceSlug" value={data.serviceSlug} onChange={set} placeholder="roof-replacement" half />
           <TextArea label="Service Description" name="serviceDescription" value={data.serviceDescription} onChange={set} placeholder="Complete roof replacement services for residential and commercial properties" />
@@ -317,7 +331,7 @@ export default function SchemaForm({ data, onChange, template }) {
       )}
 
       {/* Page / Article Info */}
-      <Section title="Page / Article Details" defaultOpen={tmpl.id === 'blog' || tmpl.id === 'faq'}>
+      <Section title="Page / Article Details" defaultOpen={tmpl.id === 'blog' || tmpl.id === 'faq'} sectionTip={SECTION_TIPS.pageArticle}>
         <Field label="Page Title (H1)" name="pageTitle" value={data.pageTitle} onChange={set} placeholder="Trusted Nashville TN Roofing Contractors" />
         <TextArea label="Page Description" name="pageDescription" value={data.pageDescription} onChange={set} placeholder="Meta description for the page" />
         <Field label="Page URL" name="pageUrl" value={data.pageUrl} onChange={set} placeholder="https://acmeplumbing.com/locations/nashville-tn/" />
@@ -328,7 +342,7 @@ export default function SchemaForm({ data, onChange, template }) {
 
       {/* Author (for blog) */}
       {showBlog && (
-        <Section title="Author Details" defaultOpen={true}>
+        <Section title="Author Details" defaultOpen={true} sectionTip={SECTION_TIPS.authorDetails}>
           <Field label="Author Name" name="authorName" value={data.authorName} onChange={set} placeholder="John Smith" half />
           <Field label="Author URL" name="authorUrl" value={data.authorUrl} onChange={set} placeholder="https://acmeplumbing.com/team/john/" half />
           <Field label="Author Title" name="authorTitle" value={data.authorTitle} onChange={set} placeholder="Senior Roofing Specialist" half />
@@ -338,7 +352,7 @@ export default function SchemaForm({ data, onChange, template }) {
       )}
 
       {/* Topic Entities */}
-      <Section title="Topic Entities (Knowledge Graph)" defaultOpen={false}>
+      <Section title="Topic Entities (Knowledge Graph)" defaultOpen={false} sectionTip={SECTION_TIPS.topicEntities}>
         <Field label="Topic 1 Name" name="topic1Name" value={data.topic1Name} onChange={set} placeholder="Roof Replacement" half />
         <Field label="Topic 1 Wikipedia" name="topic1Wiki" value={data.topic1Wiki} onChange={set} placeholder="https://en.wikipedia.org/wiki/Roofing" half />
         <Field label="Topic 2 Name" name="topic2Name" value={data.topic2Name} onChange={set} placeholder="Solar Panel" half />
@@ -347,7 +361,7 @@ export default function SchemaForm({ data, onChange, template }) {
 
       {/* Breadcrumb — available on all page types */}
       {showBreadcrumb && (
-        <Section title="Breadcrumb Navigation" defaultOpen={false}>
+        <Section title="Breadcrumb Navigation" defaultOpen={false} sectionTip={SECTION_TIPS.breadcrumb}>
           <div className="sm:col-span-2">
             <p className="text-xs text-gray-500 mb-3">Define the breadcrumb trail for this page. The generator will auto-build a default breadcrumb based on the page type, but you can customize it here.</p>
             <div className="flex items-center gap-2 mb-2">
@@ -359,6 +373,7 @@ export default function SchemaForm({ data, onChange, template }) {
                   className="text-brand-600 focus:ring-brand-500 rounded"
                 />
                 Include BreadcrumbList in schema
+                <Tooltip text={FIELD_TIPS.enableBreadcrumb} />
               </label>
             </div>
           </div>
@@ -378,7 +393,7 @@ export default function SchemaForm({ data, onChange, template }) {
 
       {/* FAQ Section — available on all page types */}
       {showFaq && (
-        <Section title="FAQ Questions & Answers" defaultOpen={tmpl.id === 'faq'}>
+        <Section title="FAQ Questions & Answers" defaultOpen={tmpl.id === 'faq'} sectionTip={SECTION_TIPS.faq}>
           <div className="sm:col-span-2 space-y-3">
             <p className="text-xs text-gray-500">Add FAQ questions to any page type. FAQ schema helps AI search engines extract your content and can generate rich results for eligible sites.</p>
             {(data.faqs || []).map((faq, i) => (
@@ -387,12 +402,18 @@ export default function SchemaForm({ data, onChange, template }) {
                   <span className="text-sm font-medium text-gray-600">Q{i + 1}</span>
                   <button onClick={() => removeFaq(i)} className="text-xs text-red-500 hover:text-red-700">Remove</button>
                 </div>
+                <div className="mb-1">
+                  <label className="text-xs text-gray-500">Question <Tooltip text={FIELD_TIPS.faqQuestion} /></label>
+                </div>
                 <input
                   placeholder="Question"
                   value={faq.question || ''}
                   onChange={e => setFaq(i, 'question', e.target.value)}
                   className="w-full px-2 py-1.5 border rounded text-sm mb-2"
                 />
+                <div className="mb-1">
+                  <label className="text-xs text-gray-500">Answer <Tooltip text={FIELD_TIPS.faqAnswer} /></label>
+                </div>
                 <textarea
                   placeholder="Answer"
                   value={faq.answer || ''}
@@ -422,7 +443,7 @@ export default function SchemaForm({ data, onChange, template }) {
 
       {/* Search Action (homepage) */}
       {tmpl.id === 'homepage' && (
-        <Section title="Site Search (Sitelinks Search Box)" defaultOpen={false}>
+        <Section title="Site Search (Sitelinks Search Box)" defaultOpen={false} sectionTip={SECTION_TIPS.searchAction}>
           <Field
             label="Search URL Template"
             name="searchUrlTemplate"
@@ -436,7 +457,7 @@ export default function SchemaForm({ data, onChange, template }) {
 
       {/* Google Maps link */}
       {showGBP && data.gbpStatus !== 'no-address' && (
-        <Section title="Advanced Properties" defaultOpen={false}>
+        <Section title="Advanced Properties" defaultOpen={false} sectionTip={SECTION_TIPS.advanced}>
           <Field label="Google Maps Link" name="hasMap" value={data.hasMap} onChange={set} placeholder="https://maps.google.com/?cid=..." hint="Your Google Maps or GBP URL" />
           <Field label="Contact Phone" name="contactPointPhone" value={data.contactPointPhone} onChange={set} placeholder="+18005551234" half />
           <Field label="Contact Type" name="contactPointType" value={data.contactPointType} onChange={set} placeholder="customer service" half />
