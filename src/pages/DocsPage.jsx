@@ -132,7 +132,7 @@ export default function DocsPage() {
         <div className="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between">
             <div>
-              <a href="#/" className="inline-block">
+              <a href="/" className="inline-block">
                 <h1 className="text-2xl font-bold tracking-tight">
                   <span className="text-brand-300">&lt;/&gt;</span> Schema Generator Docs
                 </h1>
@@ -142,7 +142,7 @@ export default function DocsPage() {
               </p>
             </div>
             <a
-              href="#/"
+              href="/"
               className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-md bg-brand-800 text-brand-200 hover:bg-brand-700 transition-colors"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
@@ -636,7 +636,7 @@ export default function DocsPage() {
               <h3 className="text-lg font-semibold text-brand-900 mb-2">Ready to generate your schema?</h3>
               <p className="text-sm text-brand-700 mb-4">Head back to the generator and start building your JSON-LD structured data.</p>
               <a
-                href="#/"
+                href="/"
                 className="inline-flex items-center gap-2 px-6 py-2.5 text-sm font-medium rounded-lg bg-brand-700 text-white hover:bg-brand-600 transition-colors"
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
@@ -652,7 +652,7 @@ export default function DocsPage() {
         <div className="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8 flex items-center justify-between text-xs text-gray-500">
           <span>Local Business Schema Generator — Documentation</span>
           <div className="flex gap-4">
-            <a href="#/" className="hover:text-brand-600">Generator</a>
+            <a href="/" className="hover:text-brand-600">Generator</a>
             <a href="https://schema.org/LocalBusiness" target="_blank" rel="noopener" className="hover:text-brand-600">Schema.org Reference</a>
           </div>
         </div>
