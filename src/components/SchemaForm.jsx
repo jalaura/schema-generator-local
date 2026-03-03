@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import BusinessTypePicker from './BusinessTypePicker';
 import Tooltip from './Tooltip';
 import { FIELD_TIPS, SECTION_TIPS } from '../data/tooltips';
+import UrlAutoFill from './UrlAutoFill';
 
 function Field({ label, name, value, onChange, required, placeholder, type = 'text', hint, half, tip }) {
   const tooltip = tip || FIELD_TIPS[name];
@@ -332,6 +333,12 @@ export default function SchemaForm({ data, onChange, template }) {
 
       {/* Page / Article Info */}
       <Section title="Page / Article Details" defaultOpen={tmpl.id === 'blog' || tmpl.id === 'faq'} sectionTip={SECTION_TIPS.pageArticle}>
+        {/* URL Auto-Fill — extract metadata from a live page */}
+        {(tmpl.id === 'blog' || tmpl.id === 'faq' || tmpl.id === 'homepage' || !tmpl.requiresLocation) && (
+          <div className="sm:col-span-2">
+            <UrlAutoFill data={data} onChange={onChange} />
+          </div>
+        )}
         <Field label="Page Title (H1)" name="pageTitle" value={data.pageTitle} onChange={set} placeholder="Trusted Nashville TN Roofing Contractors" />
         <TextArea label="Page Description" name="pageDescription" value={data.pageDescription} onChange={set} placeholder="Meta description for the page" />
         <Field label="Page URL" name="pageUrl" value={data.pageUrl} onChange={set} placeholder="https://acmeplumbing.com/locations/nashville-tn/" />
