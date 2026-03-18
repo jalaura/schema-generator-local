@@ -82,8 +82,9 @@ export default function JsonPreview({ schema, validation }) {
             {showScript && <span className="text-slate-500">\n&lt;/script&gt;</span>}
           </pre>
         ) : (
-          <div className="flex items-center justify-center h-48 text-slate-500 text-sm">
-            Fill in the form to generate your JSON-LD schema
+          <div className="flex flex-col items-center justify-center h-48 text-slate-500 text-sm text-center px-6">
+            <p className="mb-2">Enter your <strong className="text-slate-300">Business Name</strong> and <strong className="text-slate-300">Website URL</strong> to see your schema appear here in real time.</p>
+            <p className="text-xs text-slate-600">JSON-LD is a code snippet that tells Google about your business. You'll paste it into your website's HTML.</p>
           </div>
         )}
       </div>
@@ -132,6 +133,13 @@ export default function JsonPreview({ schema, validation }) {
         </div>
       )}
 
+      {/* Deployment hint */}
+      {schema && (
+        <p className="mt-2 text-xs text-gray-500 text-center">
+          Click <strong>&lt;script&gt;</strong> above, then <strong>Copy</strong> and paste into your page's <code className="bg-gray-100 px-1 rounded">&lt;head&gt;</code> section.
+        </p>
+      )}
+
       {/* Score */}
       {validation && schema && (
         <div className="mt-3 p-3 bg-gray-50 rounded-lg">
@@ -154,7 +162,10 @@ export default function JsonPreview({ schema, validation }) {
             />
           </div>
           <p className="mt-1 text-xs text-gray-500">
-            {validation.errors.length} error{validation.errors.length !== 1 ? 's' : ''}, {validation.warnings.length} warning{validation.warnings.length !== 1 ? 's' : ''}
+            {validation.errors.length} error{validation.errors.length !== 1 ? 's' : ''}, {validation.warnings.length} suggestion{validation.warnings.length !== 1 ? 's' : ''}
+            {validation.errors.length === 0 && validation.warnings.length > 0 && (
+              <span className="ml-1">— your schema is valid! Suggestions are optional improvements.</span>
+            )}
           </p>
         </div>
       )}

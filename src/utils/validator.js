@@ -30,7 +30,7 @@ export function validateSchema(json, templateId) {
   // Validate each entity in the graph
   graph.forEach((entity, i) => {
     const type = entity['@type'];
-    const prefix = `@graph[${i}] (${type || 'unknown'})`;
+    const prefix = type || 'Unknown entity';
 
     if (!type) {
       errors.push({ field: prefix, message: 'Missing @type property' });
@@ -39,7 +39,7 @@ export function validateSchema(json, templateId) {
 
     // Check @id exists
     if (!entity['@id'] && !['BreadcrumbList', 'OpeningHoursSpecification'].includes(type)) {
-      warnings.push({ field: prefix, message: 'Missing @id — recommended for entity linking' });
+      warnings.push({ field: prefix, message: 'Missing identifier — this is auto-generated when you fill in the Website URL' });
     }
 
     // Type-specific validation
@@ -87,8 +87,8 @@ function validateOrganization(entity, prefix, errors, warnings) {
   if (entity.url && !URL_REGEX.test(entity.url)) errors.push({ field: `${prefix}.url`, message: 'URL must start with http:// or https://' });
   if (!entity.logo) warnings.push({ field: `${prefix}.logo`, message: 'Logo is recommended for brand recognition' });
   if (!entity.telephone) warnings.push({ field: `${prefix}.telephone`, message: 'Phone number is recommended' });
-  if (entity.telephone && !PHONE_REGEX.test(entity.telephone)) warnings.push({ field: `${prefix}.telephone`, message: 'Phone should be E.164 format: +1XXXXXXXXXX' });
-  if (!entity.sameAs || entity.sameAs.length === 0) warnings.push({ field: `${prefix}.sameAs`, message: 'sameAs links to social profiles are recommended for entity signals' });
+  if (entity.telephone && !PHONE_REGEX.test(entity.telephone)) warnings.push({ field: `${prefix}.telephone`, message: 'Phone should be international format: +1 followed by 10 digits (e.g. +18005551234)' });
+  if (!entity.sameAs || entity.sameAs.length === 0) warnings.push({ field: `${prefix}.sameAs`, message: 'Social profile links are recommended — add them in the Social Profiles section' });
   if (entity.sameAs) {
     entity.sameAs.forEach((url, j) => {
       if (!URL_REGEX.test(url)) errors.push({ field: `${prefix}.sameAs[${j}]`, message: `Invalid sameAs URL: "${url}"` });
@@ -102,10 +102,10 @@ function validateLocalBusiness(entity, prefix, errors, warnings) {
   if (entity.address && !entity.address.addressLocality) errors.push({ field: `${prefix}.address.addressLocality`, message: 'City/locality is required in address' });
   if (!entity.telephone) warnings.push({ field: `${prefix}.telephone`, message: 'Phone number is recommended' });
   if (!entity.geo) warnings.push({ field: `${prefix}.geo`, message: 'Geo coordinates (lat/lng) are recommended for map accuracy' });
-  if (!entity.openingHoursSpecification) warnings.push({ field: `${prefix}.openingHoursSpecification`, message: 'Business hours are recommended' });
+  if (!entity.openingHoursSpecification) warnings.push({ field: `${prefix}`, message: 'Business hours are recommended — open the Business Hours section to add them' });
   if (!entity.image) warnings.push({ field: `${prefix}.image`, message: 'Business image is recommended' });
   if (!entity.priceRange) warnings.push({ field: `${prefix}.priceRange`, message: 'Price range ($-$$$$) is recommended' });
-  if (!entity.areaServed) warnings.push({ field: `${prefix}.areaServed`, message: 'areaServed is recommended for local SEO signals' });
+  if (!entity.areaServed) warnings.push({ field: `${prefix}`, message: 'Area served is recommended — fill in Location Details to add it' });
   if (entity['@type'] === 'LocalBusiness') {
     warnings.push({ field: `${prefix}.@type`, message: 'Consider using a more specific subtype (e.g., Plumber, Restaurant, Dentist) instead of generic LocalBusiness' });
   }
@@ -128,7 +128,7 @@ function validateArticle(entity, prefix, errors, warnings) {
   if (!entity.datePublished) warnings.push({ field: `${prefix}.datePublished`, message: 'Published date is recommended' });
   if (entity.datePublished && !ISO_DATE_REGEX.test(entity.datePublished)) errors.push({ field: `${prefix}.datePublished`, message: 'Date must be ISO 8601 format (YYYY-MM-DDTHH:MM:SS)' });
   if (!entity.dateModified) warnings.push({ field: `${prefix}.dateModified`, message: 'Modified date is recommended — signals freshness to search engines and AI' });
-  if (!entity.author) warnings.push({ field: `${prefix}.author`, message: 'Author is recommended for E-E-A-T signals' });
+  if (!entity.author) warnings.push({ field: `${prefix}.author`, message: 'Author is recommended — helps Google trust your content (E-E-A-T)' });
   if (!entity.image) warnings.push({ field: `${prefix}.image`, message: 'Article image is recommended (min 1200px wide)' });
 }
 
