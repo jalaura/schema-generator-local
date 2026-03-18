@@ -134,7 +134,15 @@ export default function App() {
   const schema = useMemo(() => {
     if (!template || !formData.brandName || !formData.brandDomain) return null;
     try {
-      return template.generate(formData);
+      const stripSlash = (s) => s ? s.replace(/\/+$/, '') : s;
+      const normalized = {
+        ...formData,
+        brandDomain: stripSlash(formData.brandDomain),
+        locationPageUrl: stripSlash(formData.locationPageUrl),
+        servicePageUrl: stripSlash(formData.servicePageUrl),
+        pageUrl: stripSlash(formData.pageUrl),
+      };
+      return template.generate(normalized);
     } catch (err) {
       console.error('Schema generation error:', err);
       return null;
