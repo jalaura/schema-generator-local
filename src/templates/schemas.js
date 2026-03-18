@@ -26,6 +26,15 @@ function normalizeUrl(url) {
   return url.replace(/\/+$/, '').replace(/([^:])\/\/+/g, '$1/');
 }
 
+function toISODateTime(dateStr) {
+  if (!dateStr) return undefined;
+  // Already has time component — return as-is
+  if (dateStr.includes('T')) return dateStr;
+  // Date-only (YYYY-MM-DD) — append midnight with no offset
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return `${dateStr}T00:00:00`;
+  return dateStr;
+}
+
 function buildSameAs(data) {
   return [
     data.facebookUrl, data.instagramUrl, data.twitterUrl,
@@ -223,8 +232,8 @@ function buildArticle(data, aboutEntities = []) {
     "headline": data.pageTitle,
     "description": data.pageDescription || undefined,
     "image": data.pageImage || undefined,
-    "datePublished": data.datePublished || undefined,
-    "dateModified": data.dateModified || undefined,
+    "datePublished": toISODateTime(data.datePublished),
+    "dateModified": toISODateTime(data.dateModified),
   };
 
   if (data.authorName) {
