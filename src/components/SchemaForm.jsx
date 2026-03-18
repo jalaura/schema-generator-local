@@ -298,9 +298,12 @@ export default function SchemaForm({ data, onChange, template }) {
               value={data.hoursDaysPreset || 'Mon-Fri'}
               onChange={e => {
                 const preset = e.target.value;
-                set('hoursDaysPreset', preset);
                 const opt = DAYS_OPTIONS.find(d => d.label === preset);
-                if (opt && opt.value !== 'custom') set('hoursDays', opt.value);
+                if (opt && opt.value !== 'custom') {
+                  onChange({ ...data, hoursDaysPreset: preset, hoursDays: opt.value });
+                } else {
+                  set('hoursDaysPreset', preset);
+                }
               }}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
             >
