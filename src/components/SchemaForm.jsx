@@ -390,8 +390,8 @@ export default function SchemaForm({ data, onChange, template }) {
         <TextArea label="Page Description" name="pageDescription" value={data.pageDescription} onChange={set} placeholder="Meta description for the page" />
         <Field label="Page URL" name="pageUrl" value={data.pageUrl} onChange={set} placeholder="https://acmeplumbing.com/locations/nashville-tn/" />
         <Field label="Page Image URL" name="pageImage" value={data.pageImage} onChange={set} placeholder="https://acmeplumbing.com/hero.jpg" />
-        <Field label="Date Published" name="datePublished" value={data.datePublished} onChange={set} type="date" half />
-        <Field label="Date Modified" name="dateModified" value={data.dateModified} onChange={set} type="date" half />
+        <Field label="Date Published" name="datePublished" value={data.datePublished} onChange={set} type="date" half hint="Time will be added automatically for ISO 8601" />
+        <Field label="Date Modified" name="dateModified" value={data.dateModified} onChange={set} type="date" half hint="Time will be added automatically for ISO 8601" />
       </Section>
 
       {/* Author (for blog) */}
