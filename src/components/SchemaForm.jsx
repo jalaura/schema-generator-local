@@ -68,18 +68,20 @@ function Section({ title, children, defaultOpen = true, sectionTip }) {
   );
 }
 
-const DAYS_OPTIONS = [
-  { label: 'Mon-Fri', value: '["Monday","Tuesday","Wednesday","Thursday","Friday"]' },
-  { label: 'Mon-Sat', value: '["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"]' },
-  { label: 'Mon-Sun', value: '["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"]' },
-  { label: 'Custom', value: 'custom' },
+const ALL_DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+
+const DAYS_PRESETS = [
+  { label: 'Mon-Fri', days: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'] },
+  { label: 'Mon-Sat', days: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'] },
+  { label: 'Every day', days: ALL_DAYS },
+  { label: 'Custom', days: null },
 ];
 
 const GBP_OPTIONS = [
   { value: 'yes-address', label: 'Yes — with public address', desc: 'Full LocalBusiness schema with complete address' },
-  { value: 'sab-hidden', label: 'Yes — SAB (address hidden)', desc: 'LocalBusiness with city/state only + publicAccess: false' },
-  { value: 'no-gbp-has-address', label: 'No GBP — but has an address', desc: 'LocalBusiness with address, note about creating GBP' },
-  { value: 'no-address', label: 'No GBP — online only', desc: 'Organization schema only (no LocalBusiness)' },
+  { value: 'sab-hidden', label: 'Yes — Service Area Business (address hidden)', desc: 'For businesses that go to customers. Shows city/state only, hides street address.' },
+  { value: 'no-gbp-has-address', label: 'No GBP — but has an address', desc: 'LocalBusiness with address — we recommend creating a Google Business Profile' },
+  { value: 'no-address', label: 'No GBP — online only', desc: 'Organization schema only — for businesses without a physical location' },
 ];
 
 export default function SchemaForm({ data, onChange, template }) {
@@ -181,7 +183,7 @@ export default function SchemaForm({ data, onChange, template }) {
         <Field label="Website URL" name="brandDomain" value={data.brandDomain} onChange={set} required placeholder="https://acmeplumbing.com" hint="No trailing slash" />
         <TextArea label="Business Description" name="brandDescription" value={data.brandDescription} onChange={set} placeholder="1-2 sentence description of your business" />
         <Field label="Logo URL" name="brandLogoUrl" value={data.brandLogoUrl} onChange={set} placeholder="https://acmeplumbing.com/logo.png" half />
-        <Field label="Phone" name="brandPhone" value={data.brandPhone} onChange={set} placeholder="+18005551234" hint="E.164 format" half />
+        <Field label="Phone" name="brandPhone" value={data.brandPhone} onChange={set} placeholder="+18005551234" hint="International format: +1 then 10 digits" half />
         <Field label="Email" name="brandEmail" value={data.brandEmail} onChange={set} placeholder="info@acmeplumbing.com" half />
         <Field label="Year Established" name="foundingDate" value={data.foundingDate} onChange={set} placeholder="2010" half />
       </Section>
@@ -196,7 +198,7 @@ export default function SchemaForm({ data, onChange, template }) {
       </Section>
 
       {/* Social Profiles */}
-      <Section title="Social Profiles (sameAs)" defaultOpen={false} sectionTip={SECTION_TIPS.socialProfiles}>
+      <Section title="Social Profiles" defaultOpen={false} sectionTip={SECTION_TIPS.socialProfiles}>
         <Field label="Facebook" name="facebookUrl" value={data.facebookUrl} onChange={set} placeholder="https://facebook.com/acmeplumbing" half />
         <Field label="Instagram" name="instagramUrl" value={data.instagramUrl} onChange={set} placeholder="https://instagram.com/acmeplumbing" half />
         <Field label="X / Twitter" name="twitterUrl" value={data.twitterUrl} onChange={set} placeholder="https://x.com/acmeplumbing" half />
@@ -209,9 +211,9 @@ export default function SchemaForm({ data, onChange, template }) {
       {showLocation && data.gbpStatus !== 'no-address' && (
         <Section title="Location Details" defaultOpen={true} sectionTip={SECTION_TIPS.locationDetails}>
           <Field label="City" name="locationCity" value={data.locationCity} onChange={set} required placeholder="Nashville" half />
-          <Field label="State (Full)" name="locationState" value={data.locationState} onChange={set} placeholder="Tennessee" half />
-          <Field label="State Abbreviation" name="locationStateAbbr" value={data.locationStateAbbr} onChange={set} placeholder="TN" half />
-          <Field label="URL Slug" name="locationSlug" value={data.locationSlug} onChange={set} placeholder="nashville-tn" half />
+          <Field label="State (Full Name)" name="locationState" value={data.locationState} onChange={set} placeholder="Tennessee" half hint="Used in area served" />
+          <Field label="State (Abbreviation)" name="locationStateAbbr" value={data.locationStateAbbr} onChange={set} placeholder="TN" half hint="Used in address" />
+          <Field label="URL Path" name="locationSlug" value={data.locationSlug} onChange={set} placeholder="nashville-tn" half hint="The part after /locations/ in the URL" />
           {data.gbpStatus !== 'sab-hidden' && (
             <Field label="Street Address" name="locationStreet" value={data.locationStreet} onChange={set} placeholder="456 Broadway Ave" />
           )}
@@ -221,7 +223,7 @@ export default function SchemaForm({ data, onChange, template }) {
           <Field label="Longitude" name="locationLng" value={data.locationLng} onChange={set} placeholder="-86.7816" half />
           <Field label="Location Page URL" name="locationPageUrl" value={data.locationPageUrl} onChange={set} placeholder="https://acmeplumbing.com/locations/nashville-tn/" />
           <Field label="Location Image URL" name="locationImage" value={data.locationImage} onChange={set} placeholder="https://acmeplumbing.com/nashville.jpg" />
-          <Field label="City Wikipedia URL" name="locationWiki" value={data.locationWiki} onChange={set} placeholder="https://en.wikipedia.org/wiki/Nashville,_Tennessee" hint="Links to Wikidata for entity disambiguation" />
+          <Field label="City Wikipedia URL" name="locationWiki" value={data.locationWiki} onChange={set} placeholder="https://en.wikipedia.org/wiki/Nashville,_Tennessee" hint="Helps Google identify the exact city — improves AI search visibility" />
           <Field label="State Wikipedia URL" name="stateWiki" value={data.stateWiki} onChange={set} placeholder="https://en.wikipedia.org/wiki/Tennessee" half />
         </Section>
       )}
@@ -236,42 +238,54 @@ export default function SchemaForm({ data, onChange, template }) {
                   <span className="text-sm font-medium text-gray-600">Location {i + 1}</span>
                   <button onClick={() => removeLocation(i)} className="text-xs text-red-500 hover:text-red-700">Remove</button>
                 </div>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <div>
-                    <input placeholder="City" value={loc.city || ''} onChange={e => setLocation(i, 'city', e.target.value)} className="w-full px-2 py-1.5 border rounded text-sm" />
-                  </div>
-                  <div>
-                    <input placeholder="State Abbr (e.g. TN)" value={loc.stateAbbr || ''} onChange={e => setLocation(i, 'stateAbbr', e.target.value)} className="w-full px-2 py-1.5 border rounded text-sm" />
+                    <label className="block text-xs text-gray-500 mb-0.5">City</label>
+                    <input placeholder="Nashville" value={loc.city || ''} onChange={e => setLocation(i, 'city', e.target.value)} className="w-full px-2 py-1.5 border rounded text-sm" />
                   </div>
                   <div>
-                    <input placeholder="State (full, e.g. Tennessee)" value={loc.state || ''} onChange={e => setLocation(i, 'state', e.target.value)} className="w-full px-2 py-1.5 border rounded text-sm" />
+                    <label className="block text-xs text-gray-500 mb-0.5">State (Abbreviation)</label>
+                    <input placeholder="TN" value={loc.stateAbbr || ''} onChange={e => setLocation(i, 'stateAbbr', e.target.value)} className="w-full px-2 py-1.5 border rounded text-sm" />
                   </div>
                   <div>
-                    <input placeholder="Slug (e.g. nashville-tn)" value={loc.slug || ''} onChange={e => setLocation(i, 'slug', e.target.value)} className="w-full px-2 py-1.5 border rounded text-sm" />
+                    <label className="block text-xs text-gray-500 mb-0.5">State (Full Name)</label>
+                    <input placeholder="Tennessee" value={loc.state || ''} onChange={e => setLocation(i, 'state', e.target.value)} className="w-full px-2 py-1.5 border rounded text-sm" />
                   </div>
                   <div>
-                    <input placeholder="Street Address" value={loc.street || ''} onChange={e => setLocation(i, 'street', e.target.value)} className="w-full px-2 py-1.5 border rounded text-sm" />
+                    <label className="block text-xs text-gray-500 mb-0.5">URL Path</label>
+                    <input placeholder="nashville-tn" value={loc.slug || ''} onChange={e => setLocation(i, 'slug', e.target.value)} className="w-full px-2 py-1.5 border rounded text-sm" />
                   </div>
                   <div>
-                    <input placeholder="ZIP" value={loc.zip || ''} onChange={e => setLocation(i, 'zip', e.target.value)} className="w-full px-2 py-1.5 border rounded text-sm" />
+                    <label className="block text-xs text-gray-500 mb-0.5">Street Address</label>
+                    <input placeholder="456 Broadway Ave" value={loc.street || ''} onChange={e => setLocation(i, 'street', e.target.value)} className="w-full px-2 py-1.5 border rounded text-sm" />
                   </div>
                   <div>
-                    <input placeholder="Phone (+1...)" value={loc.phone || ''} onChange={e => setLocation(i, 'phone', e.target.value)} className="w-full px-2 py-1.5 border rounded text-sm" />
+                    <label className="block text-xs text-gray-500 mb-0.5">ZIP Code</label>
+                    <input placeholder="37201" value={loc.zip || ''} onChange={e => setLocation(i, 'zip', e.target.value)} className="w-full px-2 py-1.5 border rounded text-sm" />
                   </div>
                   <div>
-                    <input placeholder="Page URL" value={loc.pageUrl || ''} onChange={e => setLocation(i, 'pageUrl', e.target.value)} className="w-full px-2 py-1.5 border rounded text-sm" />
+                    <label className="block text-xs text-gray-500 mb-0.5">Phone</label>
+                    <input placeholder="+16155551234" value={loc.phone || ''} onChange={e => setLocation(i, 'phone', e.target.value)} className="w-full px-2 py-1.5 border rounded text-sm" />
                   </div>
                   <div>
-                    <input placeholder="Latitude" value={loc.lat || ''} onChange={e => setLocation(i, 'lat', e.target.value)} className="w-full px-2 py-1.5 border rounded text-sm" />
+                    <label className="block text-xs text-gray-500 mb-0.5">Location Page URL</label>
+                    <input placeholder="https://example.com/locations/nashville-tn/" value={loc.pageUrl || ''} onChange={e => setLocation(i, 'pageUrl', e.target.value)} className="w-full px-2 py-1.5 border rounded text-sm" />
                   </div>
                   <div>
-                    <input placeholder="Longitude" value={loc.lng || ''} onChange={e => setLocation(i, 'lng', e.target.value)} className="w-full px-2 py-1.5 border rounded text-sm" />
+                    <label className="block text-xs text-gray-500 mb-0.5">Latitude</label>
+                    <input placeholder="36.1627" value={loc.lat || ''} onChange={e => setLocation(i, 'lat', e.target.value)} className="w-full px-2 py-1.5 border rounded text-sm" />
                   </div>
-                  <div className="col-span-2">
-                    <input placeholder="City Wikipedia URL" value={loc.cityWiki || ''} onChange={e => setLocation(i, 'cityWiki', e.target.value)} className="w-full px-2 py-1.5 border rounded text-sm" />
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-0.5">Longitude</label>
+                    <input placeholder="-86.7816" value={loc.lng || ''} onChange={e => setLocation(i, 'lng', e.target.value)} className="w-full px-2 py-1.5 border rounded text-sm" />
                   </div>
-                  <div className="col-span-2">
-                    <input placeholder="Image URL" value={loc.image || ''} onChange={e => setLocation(i, 'image', e.target.value)} className="w-full px-2 py-1.5 border rounded text-sm" />
+                  <div className="sm:col-span-2">
+                    <label className="block text-xs text-gray-500 mb-0.5">City Wikipedia URL</label>
+                    <input placeholder="https://en.wikipedia.org/wiki/Nashville,_Tennessee" value={loc.cityWiki || ''} onChange={e => setLocation(i, 'cityWiki', e.target.value)} className="w-full px-2 py-1.5 border rounded text-sm" />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <label className="block text-xs text-gray-500 mb-0.5">Image URL</label>
+                    <input placeholder="https://example.com/nashville.jpg" value={loc.image || ''} onChange={e => setLocation(i, 'image', e.target.value)} className="w-full px-2 py-1.5 border rounded text-sm" />
                   </div>
                 </div>
               </div>
@@ -294,27 +308,57 @@ export default function SchemaForm({ data, onChange, template }) {
               Days Open
               <Tooltip text={FIELD_TIPS.hoursDaysPreset} />
             </label>
-            <select
-              value={data.hoursDaysPreset || 'Mon-Fri'}
-              onChange={e => {
-                const preset = e.target.value;
-                const opt = DAYS_OPTIONS.find(d => d.label === preset);
-                if (opt && opt.value !== 'custom') {
-                  onChange({ ...data, hoursDaysPreset: preset, hoursDays: opt.value });
-                } else {
-                  set('hoursDaysPreset', preset);
-                }
-              }}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-            >
-              {DAYS_OPTIONS.map(d => <option key={d.label} value={d.label}>{d.label}</option>)}
-            </select>
+            <div className="flex flex-wrap gap-2 mb-2">
+              {DAYS_PRESETS.map(p => (
+                <button
+                  key={p.label}
+                  type="button"
+                  onClick={() => {
+                    if (p.days) {
+                      onChange({ ...data, hoursDaysPreset: p.label, hoursDays: JSON.stringify(p.days) });
+                    } else {
+                      set('hoursDaysPreset', p.label);
+                    }
+                  }}
+                  className={`px-3 py-1.5 text-xs font-medium rounded-md border transition-colors ${
+                    data.hoursDaysPreset === p.label || (!data.hoursDaysPreset && p.label === 'Mon-Fri')
+                      ? 'border-brand-500 bg-brand-50 text-brand-700'
+                      : 'border-gray-300 bg-white text-gray-600 hover:bg-gray-50'
+                  }`}
+                >
+                  {p.label}
+                </button>
+              ))}
+            </div>
+            {data.hoursDaysPreset === 'Custom' && (
+              <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2">
+                {ALL_DAYS.map(day => {
+                  let selectedDays = [];
+                  try { selectedDays = JSON.parse(data.hoursDays || '[]'); } catch {}
+                  if (!Array.isArray(selectedDays)) selectedDays = [];
+                  const checked = selectedDays.includes(day);
+                  return (
+                    <label key={day} className="flex items-center gap-1.5 text-sm text-gray-700 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() => {
+                          const updated = checked ? selectedDays.filter(d => d !== day) : [...selectedDays, day];
+                          // Maintain standard day order
+                          const ordered = ALL_DAYS.filter(d => updated.includes(d));
+                          set('hoursDays', JSON.stringify(ordered));
+                        }}
+                        className="text-brand-600 focus:ring-brand-500 rounded"
+                      />
+                      {day.slice(0, 3)}
+                    </label>
+                  );
+                })}
+              </div>
+            )}
           </div>
-          {data.hoursDaysPreset === 'Custom' && (
-            <TextArea label="Custom Days (JSON array)" name="hoursDays" value={data.hoursDays} onChange={set} placeholder='["Monday","Tuesday","Wednesday"]' />
-          )}
-          <Field label="Opens" name="hoursOpen" value={data.hoursOpen} onChange={set} placeholder="08:00" half hint="24h format" />
-          <Field label="Closes" name="hoursClose" value={data.hoursClose} onChange={set} placeholder="17:00" half hint="24h format" />
+          <Field label="Opens" name="hoursOpen" value={data.hoursOpen} onChange={set} placeholder="08:00" half hint="e.g. 08:00 (24-hour format)" />
+          <Field label="Closes" name="hoursClose" value={data.hoursClose} onChange={set} placeholder="17:00" half hint="e.g. 17:00 (24-hour format)" />
           <Field label="Price Range" name="priceRange" value={data.priceRange} onChange={set} placeholder="$$" half hint="$, $$, $$$, or $$$$" />
           <Field label="Payment Accepted" name="paymentAccepted" value={data.paymentAccepted} onChange={set} placeholder="Cash, Credit Card" half />
         </Section>
@@ -324,13 +368,13 @@ export default function SchemaForm({ data, onChange, template }) {
       {showService && (
         <Section title="Service Details" defaultOpen={true} sectionTip={SECTION_TIPS.serviceDetails}>
           <Field label="Service Name" name="serviceName" value={data.serviceName} onChange={set} required placeholder="Roof Replacement" />
-          <Field label="Service URL Slug" name="serviceSlug" value={data.serviceSlug} onChange={set} placeholder="roof-replacement" half />
+          <Field label="Service URL Path" name="serviceSlug" value={data.serviceSlug} onChange={set} placeholder="roof-replacement" half hint="The part after /services/ in the URL" />
           <TextArea label="Service Description" name="serviceDescription" value={data.serviceDescription} onChange={set} placeholder="Complete roof replacement services for residential and commercial properties" />
           <Field label="Service Type" name="serviceType" value={data.serviceType} onChange={set} placeholder="Roof Replacement" half />
           <Field label="Service Category" name="serviceCategory" value={data.serviceCategory} onChange={set} placeholder="Roofing" half />
           <Field label="Service Page URL" name="servicePageUrl" value={data.servicePageUrl} onChange={set} placeholder="https://acmeplumbing.com/services/roof-replacement/" />
           <Field label="Service Image URL" name="serviceImage" value={data.serviceImage} onChange={set} placeholder="https://acmeplumbing.com/roof-replacement.jpg" />
-          <Field label="Service Wikipedia URL" name="serviceWiki" value={data.serviceWiki} onChange={set} placeholder="https://en.wikipedia.org/wiki/Roofing" hint="Optional — links service to Knowledge Graph entity" />
+          <Field label="Service Wikipedia URL" name="serviceWiki" value={data.serviceWiki} onChange={set} placeholder="https://en.wikipedia.org/wiki/Roofing" hint="Optional — helps Google understand what your service is" />
         </Section>
       )}
 
@@ -362,7 +406,7 @@ export default function SchemaForm({ data, onChange, template }) {
       )}
 
       {/* Topic Entities */}
-      <Section title="Topic Entities (Knowledge Graph)" defaultOpen={false} sectionTip={SECTION_TIPS.topicEntities}>
+      <Section title="Topic Entities" defaultOpen={false} sectionTip={SECTION_TIPS.topicEntities}>
         <Field label="Topic 1 Name" name="topic1Name" value={data.topic1Name} onChange={set} placeholder="Roof Replacement" half />
         <Field label="Topic 1 Wikipedia" name="topic1Wiki" value={data.topic1Wiki} onChange={set} placeholder="https://en.wikipedia.org/wiki/Roofing" half />
         <Field label="Topic 2 Name" name="topic2Name" value={data.topic2Name} onChange={set} placeholder="Solar Panel" half />
