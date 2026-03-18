@@ -20,6 +20,12 @@ function clean(obj) {
   return obj;
 }
 
+function normalizeUrl(url) {
+  if (!url) return '';
+  // Strip trailing slashes, then collapse any double slashes (except after protocol)
+  return url.replace(/\/+$/, '').replace(/([^:])\/\/+/g, '$1/');
+}
+
 function buildSameAs(data) {
   return [
     data.facebookUrl, data.instagramUrl, data.twitterUrl,
@@ -93,9 +99,10 @@ function buildOrganization(data) {
 
 function buildLocalBusiness(data, loc = {}) {
   const slug = loc.slug || data.locationSlug || '';
+  const locationPath = slug ? `/locations/${slug}` : '/locations';
   const biz = {
     "@type": data.businessType || "LocalBusiness",
-    "@id": `${data.brandDomain}/locations/${slug}/#localbusiness`,
+    "@id": normalizeUrl(`${data.brandDomain}${locationPath}/#localbusiness`),
     "name": loc.name ? `${data.brandName} - ${loc.name}` : data.brandName,
     "image": loc.image || data.locationImage || undefined,
     "url": loc.pageUrl || data.locationPageUrl || data.brandDomain,
@@ -179,7 +186,7 @@ function buildService(data) {
     "serviceType": data.serviceType || undefined,
     "category": data.serviceCategory || undefined,
     "provider": data.locationSlug
-      ? { "@id": `${data.brandDomain}/locations/${data.locationSlug}/#localbusiness` }
+      ? { "@id": normalizeUrl(`${data.brandDomain}/locations/${data.locationSlug}/#localbusiness`) }
       : { "@id": `${data.brandDomain}/#organization` },
     "areaServed": data.locationCity ? clean({
       "@type": "City",
