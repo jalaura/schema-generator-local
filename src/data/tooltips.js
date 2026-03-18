@@ -15,7 +15,7 @@ export const FIELD_TIPS = {
   brandLogoUrl: "Direct URL to your business logo image. Google recommends a high-resolution image (at least 112x112px). This creates an ImageObject entity linked to your Organization.",
   brandPhone: "Your primary business phone in E.164 international format (e.g. +18005551234). This should match your GBP listing and all directory citations exactly for NAP consistency.",
   brandEmail: "Your primary business contact email. This is added to the Organization entity and can appear in knowledge panels.",
-  foundingDate: "The date your business was established (ISO 8601 format). This builds trust signals and can appear in knowledge panels. Google values established businesses in local results.",
+  foundingDate: "The year your business was established. This builds trust signals and can appear in knowledge panels. Google values established businesses in local results.",
 
   // HQ Address
   hqStreet: "Your headquarters or primary business street address. For multi-location businesses, this is the main office address that goes in the Organization entity.",

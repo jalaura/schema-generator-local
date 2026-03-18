@@ -476,7 +476,7 @@ export default function DocsPage() {
 
             <H3>Authoritativeness</H3>
             <P>
-              The Organization entity with its <Code>foundingDate</Code>, comprehensive sameAs links, and Knowledge Graph connections signals authority. Multi-location schema shows business scale. Service schema with detailed descriptions demonstrates domain coverage.
+              The Organization entity with its <Code>foundingDate</Code> (year established), comprehensive sameAs links, and Knowledge Graph connections signals authority. Multi-location schema shows business scale. Service schema with detailed descriptions demonstrates domain coverage.
             </P>
 
             <H3>Trustworthiness</H3>
