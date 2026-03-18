@@ -40,10 +40,13 @@ function buildOrganization(data) {
     "name": data.brandName,
     "url": data.brandDomain,
     "description": data.brandDescription || undefined,
+    "image": data.brandLogoUrl || undefined,
     "logo": data.brandLogoUrl ? {
       "@type": "ImageObject",
       "@id": `${data.brandDomain}/#logo`,
-      "url": data.brandLogoUrl
+      "contentUrl": data.brandLogoUrl,
+      "url": data.brandDomain,
+      "caption": data.brandName
     } : undefined,
     "telephone": data.brandPhone || undefined,
     "email": data.brandEmail || undefined,
