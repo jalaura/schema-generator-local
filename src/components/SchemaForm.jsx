@@ -183,7 +183,7 @@ export default function SchemaForm({ data, onChange, template }) {
         <Field label="Logo URL" name="brandLogoUrl" value={data.brandLogoUrl} onChange={set} placeholder="https://acmeplumbing.com/logo.png" half />
         <Field label="Phone" name="brandPhone" value={data.brandPhone} onChange={set} placeholder="+18005551234" hint="E.164 format" half />
         <Field label="Email" name="brandEmail" value={data.brandEmail} onChange={set} placeholder="info@acmeplumbing.com" half />
-        <Field label="Founding Date" name="foundingDate" value={data.foundingDate} onChange={set} placeholder="2010-01-15" type="date" half />
+        <Field label="Year Established" name="foundingDate" value={data.foundingDate} onChange={set} placeholder="2010" half />
       </Section>
 
       {/* HQ Address */}
