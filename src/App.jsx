@@ -106,10 +106,25 @@ function loadSavedTemplate() {
   }
 }
 
+function loadSavedClients() {
+  try {
+    const saved = localStorage.getItem('schema-generator-clients');
+    if (saved) return JSON.parse(saved);
+  } catch {}
+  return [];
+}
+
+function saveSavedClients(clients) {
+  try {
+    localStorage.setItem('schema-generator-clients', JSON.stringify(clients));
+  } catch {}
+}
+
 export default function App() {
   const [templateId, setTemplateId] = useState(loadSavedTemplate);
   const [formData, setFormData] = useState(loadSavedData);
   const [page, setPage] = useState(window.location.pathname === '/docs' ? 'docs' : 'generator');
+  const [savedClients, setSavedClients] = useState(loadSavedClients);
 
   // Listen for path changes (popstate for back/forward)
   useEffect(() => {
@@ -173,6 +188,43 @@ export default function App() {
     }
   };
 
+  const handleSaveClient = () => {
+    const name = formData.brandName?.trim();
+    if (!name) {
+      alert('Please enter a Business Name before saving.');
+      return;
+    }
+    const existing = savedClients.findIndex(c => c.name === name);
+    const entry = { name, data: formData, templateId, savedAt: new Date().toISOString() };
+    let updated;
+    if (existing >= 0) {
+      if (!window.confirm(`Update saved session for "${name}"?`)) return;
+      updated = [...savedClients];
+      updated[existing] = entry;
+    } else {
+      updated = [...savedClients, entry];
+    }
+    setSavedClients(updated);
+    saveSavedClients(updated);
+  };
+
+  const handleLoadClient = (index) => {
+    const client = savedClients[index];
+    if (!client) return;
+    setFormData({ ...DEFAULT_DATA, ...client.data });
+    setTemplateId(client.templateId || 'homepage');
+    window.scrollTo(0, 0);
+  };
+
+  const handleDeleteClient = (index) => {
+    const client = savedClients[index];
+    if (!client) return;
+    if (!window.confirm(`Delete saved session for "${client.name}"?`)) return;
+    const updated = savedClients.filter((_, i) => i !== index);
+    setSavedClients(updated);
+    saveSavedClients(updated);
+  };
+
   // Docs page
   if (page === 'docs') {
     return <DocsPage />;
@@ -180,7 +232,13 @@ export default function App() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <Header onNewClient={handleNewClient} />
+      <Header
+        onNewClient={handleNewClient}
+        onSaveClient={handleSaveClient}
+        savedClients={savedClients}
+        onLoadClient={handleLoadClient}
+        onDeleteClient={handleDeleteClient}
+      />
 
       <main className="flex-1 max-w-7xl mx-auto w-full px-4 py-6 sm:px-6 lg:px-8">
         {/* Template Selector */}
