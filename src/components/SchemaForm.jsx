@@ -69,13 +69,7 @@ function Section({ title, children, defaultOpen = true, sectionTip }) {
 }
 
 const ALL_DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-
-const DAYS_PRESETS = [
-  { label: 'Mon-Fri', days: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'] },
-  { label: 'Mon-Sat', days: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'] },
-  { label: 'Every day', days: ALL_DAYS },
-  { label: 'Custom', days: null },
-];
+const SHORT_DAYS = { Monday: 'Mon', Tuesday: 'Tue', Wednesday: 'Wed', Thursday: 'Thu', Friday: 'Fri', Saturday: 'Sat', Sunday: 'Sun' };
 
 const GBP_OPTIONS = [
   { value: 'yes-address', label: 'Yes — with public address', desc: 'Full LocalBusiness schema with complete address' },
@@ -125,6 +119,49 @@ export default function SchemaForm({ data, onChange, template }) {
     const faqs = [...(data.faqs || [])];
     faqs.splice(index, 1);
     onChange({ ...data, faqs: faqs });
+  };
+
+  // --- Hours blocks (multiple time ranges) ---
+  // Migrate old flat fields to blocks on first access
+  const getHoursBlocks = () => {
+    if (data.hoursBlocks && data.hoursBlocks.length > 0) return data.hoursBlocks;
+    // Backward compat: migrate old single-range fields
+    if (data.hoursDays && data.hoursOpen && data.hoursClose) {
+      let days;
+      try { days = JSON.parse(data.hoursDays); } catch { days = []; }
+      return [{ days: Array.isArray(days) ? days : [], opens: data.hoursOpen, closes: data.hoursClose }];
+    }
+    return [];
+  };
+
+  const setHoursBlock = (index, field, value) => {
+    const blocks = [...getHoursBlocks()];
+    if (!blocks[index]) blocks[index] = { days: [], opens: '', closes: '' };
+    blocks[index] = { ...blocks[index], [field]: value };
+    onChange({ ...data, hoursBlocks: blocks });
+  };
+
+  const toggleHoursDay = (blockIndex, day) => {
+    const blocks = [...getHoursBlocks()];
+    const block = { ...(blocks[blockIndex] || { days: [], opens: '', closes: '' }) };
+    const days = block.days || [];
+    block.days = days.includes(day)
+      ? days.filter(d => d !== day)
+      : ALL_DAYS.filter(d => [...days, day].includes(d)); // maintain order
+    blocks[blockIndex] = block;
+    onChange({ ...data, hoursBlocks: blocks });
+  };
+
+  const addHoursBlock = () => {
+    const blocks = [...getHoursBlocks()];
+    blocks.push({ days: [], opens: '', closes: '' });
+    onChange({ ...data, hoursBlocks: blocks });
+  };
+
+  const removeHoursBlock = (index) => {
+    const blocks = [...getHoursBlocks()];
+    blocks.splice(index, 1);
+    onChange({ ...data, hoursBlocks: blocks });
   };
 
   const showGBP = tmpl.requiresLocation || tmpl.id === 'service-location' || tmpl.id === 'location' || tmpl.id === 'multi-location';
@@ -303,62 +340,64 @@ export default function SchemaForm({ data, onChange, template }) {
       {/* Business Hours */}
       {(showGBP || showLocation || showMultiLocation) && data.gbpStatus !== 'no-address' && (
         <Section title="Business Hours" defaultOpen={false} sectionTip={SECTION_TIPS.businessHours}>
-          <div className="sm:col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Days Open
-              <Tooltip text={FIELD_TIPS.hoursDaysPreset} />
-            </label>
-            <div className="flex flex-wrap gap-2 mb-2">
-              {DAYS_PRESETS.map(p => (
-                <button
-                  key={p.label}
-                  type="button"
-                  onClick={() => {
-                    if (p.days) {
-                      onChange({ ...data, hoursDaysPreset: p.label, hoursDays: JSON.stringify(p.days) });
-                    } else {
-                      set('hoursDaysPreset', p.label);
-                    }
-                  }}
-                  className={`px-3 py-1.5 text-xs font-medium rounded-md border transition-colors ${
-                    data.hoursDaysPreset === p.label || (!data.hoursDaysPreset && p.label === 'Mon-Fri')
-                      ? 'border-brand-500 bg-brand-50 text-brand-700'
-                      : 'border-gray-300 bg-white text-gray-600 hover:bg-gray-50'
-                  }`}
-                >
-                  {p.label}
-                </button>
-              ))}
-            </div>
-            {data.hoursDaysPreset === 'Custom' && (
-              <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2">
-                {ALL_DAYS.map(day => {
-                  let selectedDays = [];
-                  try { selectedDays = JSON.parse(data.hoursDays || '[]'); } catch {}
-                  if (!Array.isArray(selectedDays)) selectedDays = [];
-                  const checked = selectedDays.includes(day);
-                  return (
-                    <label key={day} className="flex items-center gap-1.5 text-sm text-gray-700 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={checked}
-                        onChange={() => {
-                          const updated = checked ? selectedDays.filter(d => d !== day) : [...selectedDays, day];
-                          // Maintain standard day order
-                          const ordered = ALL_DAYS.filter(d => updated.includes(d));
-                          set('hoursDays', JSON.stringify(ordered));
-                        }}
-                        className="text-brand-600 focus:ring-brand-500 rounded"
-                      />
-                      {day.slice(0, 3)}
-                    </label>
-                  );
-                })}
+          <div className="sm:col-span-2 space-y-3">
+            <p className="text-xs text-gray-500">Add one block for each set of hours. For example, Mon-Fri 8-5 and Sat 9-3.</p>
+            {getHoursBlocks().map((block, i) => (
+              <div key={i} className="border border-gray-200 rounded-lg p-3 bg-gray-50/50">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-sm font-medium text-gray-600">Hours {i + 1}</span>
+                  {getHoursBlocks().length > 1 && (
+                    <button onClick={() => removeHoursBlock(i)} className="text-xs text-red-500 hover:text-red-700">Remove</button>
+                  )}
+                </div>
+                <div className="flex flex-wrap gap-1.5 mb-3">
+                  {ALL_DAYS.map(day => {
+                    const active = (block.days || []).includes(day);
+                    return (
+                      <button
+                        key={day}
+                        type="button"
+                        onClick={() => toggleHoursDay(i, day)}
+                        className={`px-2.5 py-1 text-xs font-medium rounded-md border transition-colors ${
+                          active
+                            ? 'border-brand-500 bg-brand-50 text-brand-700'
+                            : 'border-gray-300 bg-white text-gray-500 hover:bg-gray-50'
+                        }`}
+                      >
+                        {SHORT_DAYS[day]}
+                      </button>
+                    );
+                  })}
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-0.5">Opens</label>
+                    <input
+                      type="time"
+                      value={block.opens || ''}
+                      onChange={e => setHoursBlock(i, 'opens', e.target.value)}
+                      className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-0.5">Closes</label>
+                    <input
+                      type="time"
+                      value={block.closes || ''}
+                      onChange={e => setHoursBlock(i, 'closes', e.target.value)}
+                      className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+                    />
+                  </div>
+                </div>
               </div>
-            )}
+            ))}
+            <button
+              onClick={addHoursBlock}
+              className="w-full py-2 border-2 border-dashed border-gray-300 rounded-lg text-sm text-gray-500 hover:border-brand-400 hover:text-brand-600 transition-colors"
+            >
+              + Add {getHoursBlocks().length === 0 ? 'business hours' : 'another time block'}
+            </button>
           </div>
-          <Field label="Opens" name="hoursOpen" value={data.hoursOpen} onChange={set} placeholder="08:00" half hint="e.g. 08:00 (24-hour format)" />
-          <Field label="Closes" name="hoursClose" value={data.hoursClose} onChange={set} placeholder="17:00" half hint="e.g. 17:00 (24-hour format)" />
           <Field label="Price Range" name="priceRange" value={data.priceRange} onChange={set} placeholder="$$" half hint="$, $$, $$$, or $$$$" />
           <Field label="Payment Accepted" name="paymentAccepted" value={data.paymentAccepted} onChange={set} placeholder="Cash, Credit Card" half />
         </Section>
