@@ -113,7 +113,7 @@ function buildLocalBusiness(data, loc = {}) {
   const slug = loc.slug || data.locationSlug || '';
   const locationPath = slug ? `/locations/${slug}` : '/locations';
   const biz = {
-    "@type": data.businessType || "LocalBusiness",
+    "@type": (data.businessType && data.businessType !== 'Organization') ? data.businessType : "LocalBusiness",
     "@id": normalizeUrl(`${data.brandDomain}${locationPath}/#localbusiness`),
     "name": loc.name ? `${data.brandName} - ${loc.name}` : data.brandName,
     "image": loc.image || data.locationImage || undefined,
@@ -334,18 +334,118 @@ function maybeAddFAQ(graph, data) {
   if (faq) graph.push(faq);
 }
 
-// Collect about entities from topic fields
+// Collect about entities from topic fields (supports new topics array and legacy fields)
 function collectAboutEntities(data) {
   const aboutEntities = [];
-  if (data.topic1Name) aboutEntities.push({ name: data.topic1Name, sameAs: data.topic1Wiki });
-  if (data.topic2Name) aboutEntities.push({ name: data.topic2Name, sameAs: data.topic2Wiki });
+  // New dynamic topics array
+  if (data.topics && data.topics.length > 0) {
+    data.topics.forEach(t => {
+      if (t.name) aboutEntities.push({ name: t.name, sameAs: t.wiki });
+    });
+  }
+  // Legacy fallback for old topic1/topic2 fields
+  if (aboutEntities.length === 0) {
+    if (data.topic1Name) aboutEntities.push({ name: data.topic1Name, sameAs: data.topic1Wiki });
+    if (data.topic2Name) aboutEntities.push({ name: data.topic2Name, sameAs: data.topic2Wiki });
+  }
   return aboutEntities;
 }
 
 // ========== TEMPLATE GENERATORS ==========
 
 export function generateHomepage(data) {
-  const graph = [buildOrganization(data), buildWebSite(data)];
+  const org = buildOrganization(data);
+  const bt = data.businessType || 'Organization';
+
+  // Upgrade Organization to specific business type if selected
+  if (bt !== 'Organization') {
+    if (bt === 'LocalBusiness') {
+      org['@type'] = 'LocalBusiness';
+    } else {
+      org['@type'] = [bt, 'LocalBusiness'];
+    }
+
+    // Geo coordinates
+    if (data.hqLat && data.hqLng) {
+      org.geo = { "@type": "GeoCoordinates", "latitude": data.hqLat, "longitude": data.hqLng };
+    }
+
+    // Opening hours
+    let hoursBlocks = data.hoursBlocks || [];
+    if (hoursBlocks.length === 0 && data.hoursDays && data.hoursOpen && data.hoursClose) {
+      let days;
+      try { days = JSON.parse(data.hoursDays); } catch { days = []; }
+      hoursBlocks = [{ days: Array.isArray(days) ? days : [], opens: data.hoursOpen, closes: data.hoursClose }];
+    }
+    const validBlocks = hoursBlocks.filter(b => b.days && b.days.length > 0 && b.opens && b.closes);
+    if (validBlocks.length > 0) {
+      org.openingHoursSpecification = validBlocks.map(b => ({
+        "@type": "OpeningHoursSpecification",
+        "dayOfWeek": b.days,
+        "opens": b.opens,
+        "closes": b.closes
+      }));
+    }
+
+    // Business details
+    if (data.priceRange) org.priceRange = data.priceRange;
+    if (data.paymentAccepted) org.paymentAccepted = data.paymentAccepted;
+    if (data.currenciesAccepted) org.currenciesAccepted = data.currenciesAccepted;
+
+    // SAB flag
+    if (data.homepageSAB) org.publicAccess = false;
+
+    // Slogan
+    if (data.slogan) org.slogan = data.slogan;
+
+    // hasOfferCatalog — services offered
+    const services = (data.services || []).filter(s => s.name);
+    if (services.length > 0) {
+      org.hasOfferCatalog = {
+        "@type": "OfferCatalog",
+        "name": "Services",
+        "itemListElement": services.map(s => clean({
+          "@type": "Offer",
+          "itemOffered": clean({
+            "@type": "Service",
+            "name": s.name,
+            "description": s.description || undefined,
+            "url": s.url || undefined
+          })
+        }))
+      };
+    }
+
+    // Aggregate rating
+    if (data.aggregateRatingValue && data.aggregateRatingCount) {
+      org.aggregateRating = {
+        "@type": "AggregateRating",
+        "ratingValue": data.aggregateRatingValue,
+        "reviewCount": data.aggregateRatingCount
+      };
+    }
+
+    // Google Maps link
+    if (data.hasMap) org.hasMap = data.hasMap;
+  }
+
+  // knowsAbout from comma-separated text
+  if (data.knowsAboutText) {
+    const topics = data.knowsAboutText.split(',').map(s => s.trim()).filter(Boolean);
+    if (topics.length > 0) org.knowsAbout = topics;
+  }
+
+  // About entities from topic fields
+  const aboutEntities = collectAboutEntities(data);
+  if (aboutEntities.length > 0) {
+    org.about = aboutEntities.map(e => clean({
+      "@type": "Thing",
+      "name": e.name,
+      "sameAs": e.sameAs || undefined
+    }));
+  }
+
+  const graph = [org, buildWebSite(data)];
 
   // Breadcrumb
   const bc = buildCustomBreadcrumb(data, [

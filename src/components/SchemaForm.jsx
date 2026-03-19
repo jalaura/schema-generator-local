@@ -164,12 +164,85 @@ export default function SchemaForm({ data, onChange, template }) {
     onChange({ ...data, hoursBlocks: blocks });
   };
 
+  // --- Topics (dynamic list, replaces fixed topic1/topic2 fields) ---
+  const getTopics = () => {
+    if (data.topics && data.topics.length > 0) return data.topics;
+    const migrated = [];
+    if (data.topic1Name) migrated.push({ name: data.topic1Name, wiki: data.topic1Wiki || '' });
+    if (data.topic2Name) migrated.push({ name: data.topic2Name, wiki: data.topic2Wiki || '' });
+    while (migrated.length < 3) migrated.push({ name: '', wiki: '' });
+    return migrated;
+  };
+
+  const setTopic = (index, field, value) => {
+    const topics = [...getTopics()];
+    if (!topics[index]) topics[index] = { name: '', wiki: '' };
+    topics[index] = { ...topics[index], [field]: value };
+    onChange({ ...data, topics });
+  };
+
+  const addTopic = () => {
+    const topics = [...getTopics()];
+    if (topics.length >= 10) return;
+    topics.push({ name: '', wiki: '' });
+    onChange({ ...data, topics });
+  };
+
+  const removeTopic = (index) => {
+    const topics = [...getTopics()];
+    topics.splice(index, 1);
+    onChange({ ...data, topics });
+  };
+
+  // --- Services Offered (hasOfferCatalog) ---
+  const setService = (index, field, value) => {
+    const services = [...(data.services || [])];
+    if (!services[index]) services[index] = { name: '', description: '', url: '' };
+    services[index] = { ...services[index], [field]: value };
+    onChange({ ...data, services });
+  };
+
+  const addService = () => {
+    const services = [...(data.services || [])];
+    services.push({ name: '', description: '', url: '' });
+    onChange({ ...data, services });
+  };
+
+  const removeService = (index) => {
+    const services = [...(data.services || [])];
+    services.splice(index, 1);
+    onChange({ ...data, services });
+  };
+
+  // --- Area Served (for homepage SAB) ---
+  const setAreaServed = (index, field, value) => {
+    const areas = [...(data.areaServed || [])];
+    if (!areas[index]) areas[index] = { type: 'State', name: '', sameAs: '' };
+    areas[index] = { ...areas[index], [field]: value };
+    onChange({ ...data, areaServed: areas });
+  };
+
+  const addAreaServed = () => {
+    const areas = [...(data.areaServed || [])];
+    areas.push({ type: 'State', name: '', sameAs: '' });
+    onChange({ ...data, areaServed: areas });
+  };
+
+  const removeAreaServed = (index) => {
+    const areas = [...(data.areaServed || [])];
+    areas.splice(index, 1);
+    onChange({ ...data, areaServed: areas });
+  };
+
   const showGBP = tmpl.requiresLocation || tmpl.id === 'service-location' || tmpl.id === 'location' || tmpl.id === 'multi-location';
   const showLocation = tmpl.requiresLocation && tmpl.id !== 'multi-location';
   const showMultiLocation = tmpl.multiLocation;
   const showService = tmpl.requiresService;
   const showBlog = tmpl.id === 'blog';
   const showOrgOnly = tmpl.id === 'org-only';
+  const isHomepage = tmpl.id === 'homepage';
+  const isBusinessType = data.businessType && data.businessType !== 'Organization';
+  const showHomepageBizFields = isHomepage && isBusinessType;
   // FAQ and Breadcrumb are available on ALL page types
   const showFaq = true;
   const showBreadcrumb = true;
@@ -205,18 +278,12 @@ export default function SchemaForm({ data, onChange, template }) {
         </Section>
       )}
 
-      {/* Business Type */}
-      {(showGBP || showOrgOnly) && data.gbpStatus !== 'no-address' && (
-        <Section title="Business Type" defaultOpen={true} sectionTip={SECTION_TIPS.businessType}>
-          <div className="sm:col-span-2">
-            <BusinessTypePicker value={data.businessType} onChange={(v) => set('businessType', v)} />
-          </div>
-        </Section>
-      )}
-
       {/* Organization / Brand Info */}
       <Section title="Organization / Brand Info" defaultOpen={true} sectionTip={SECTION_TIPS.orgInfo}>
         <Field label="Business Name" name="brandName" value={data.brandName} onChange={set} required placeholder="Acme Plumbing" />
+        <div className="sm:col-span-2">
+          <BusinessTypePicker value={data.businessType} onChange={(v) => set('businessType', v)} />
+        </div>
         <Field label="Website URL" name="brandDomain" value={data.brandDomain} onChange={set} required placeholder="https://acmeplumbing.com" hint="No trailing slash" />
         <TextArea label="Business Description" name="brandDescription" value={data.brandDescription} onChange={set} placeholder="1-2 sentence description of your business" />
         <Field label="Logo URL" name="brandLogoUrl" value={data.brandLogoUrl} onChange={set} placeholder="https://acmeplumbing.com/logo.png" half />
@@ -232,6 +299,12 @@ export default function SchemaForm({ data, onChange, template }) {
         <Field label="State" name="hqState" value={data.hqState} onChange={set} placeholder="CO" half />
         <Field label="ZIP Code" name="hqZip" value={data.hqZip} onChange={set} placeholder="80202" half />
         <Field label="Country" name="addressCountry" value={data.addressCountry || 'US'} onChange={set} placeholder="US" half />
+        {showHomepageBizFields && (
+          <>
+            <Field label="Latitude" name="hqLat" value={data.hqLat} onChange={set} placeholder="45.7833" half hint="Decimal format — right-click on Google Maps to copy" />
+            <Field label="Longitude" name="hqLng" value={data.hqLng} onChange={set} placeholder="-108.5007" half />
+          </>
+        )}
       </Section>
 
       {/* Social Profiles */}
@@ -338,7 +411,7 @@ export default function SchemaForm({ data, onChange, template }) {
       )}
 
       {/* Business Hours */}
-      {(showGBP || showLocation || showMultiLocation) && data.gbpStatus !== 'no-address' && (
+      {((showGBP || showLocation || showMultiLocation) && data.gbpStatus !== 'no-address' || showHomepageBizFields) && (
         <Section title="Business Hours" defaultOpen={false} sectionTip={SECTION_TIPS.businessHours}>
           <div className="sm:col-span-2 space-y-3">
             <p className="text-xs text-gray-500">Add one block for each set of hours. For example, Mon-Fri 8-5 and Sat 9-3.</p>
@@ -399,7 +472,8 @@ export default function SchemaForm({ data, onChange, template }) {
             </button>
           </div>
           <Field label="Price Range" name="priceRange" value={data.priceRange} onChange={set} placeholder="$$" half hint="$, $$, $$$, or $$$$" />
-          <Field label="Payment Accepted" name="paymentAccepted" value={data.paymentAccepted} onChange={set} placeholder="Cash, Credit Card" half />
+          <Field label="Payment Accepted" name="paymentAccepted" value={data.paymentAccepted} onChange={set} placeholder="Cash, Credit Card, Insurance, Check, Financing" half />
+          <Field label="Currencies Accepted" name="currenciesAccepted" value={data.currenciesAccepted} onChange={set} placeholder="USD" half hint="Default: USD" />
         </Section>
       )}
 
@@ -417,6 +491,112 @@ export default function SchemaForm({ data, onChange, template }) {
         </Section>
       )}
 
+      {/* Service Area — for homepage with business type */}
+      {showHomepageBizFields && (
+        <Section title="Service Area" defaultOpen={false} sectionTip={SECTION_TIPS.serviceArea}>
+          <div className="sm:col-span-2">
+            <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer mb-3">
+              <input
+                type="checkbox"
+                checked={data.homepageSAB || false}
+                onChange={e => set('homepageSAB', e.target.checked)}
+                className="text-brand-600 focus:ring-brand-500 rounded"
+              />
+              This is a Service Area Business (no storefront)
+            </label>
+            <p className="text-xs text-gray-500 mb-3">Add areas your business serves. Each entry can be a State, City, or custom area.</p>
+            {(data.areaServed || []).map((area, i) => (
+              <div key={i} className="border border-gray-200 rounded-lg p-3 bg-gray-50/50 mb-2">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-sm font-medium text-gray-600">Area {i + 1}</span>
+                  <button onClick={() => removeAreaServed(i)} className="text-xs text-red-500 hover:text-red-700">Remove</button>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-0.5">Type</label>
+                    <select
+                      value={area.type || 'State'}
+                      onChange={e => setAreaServed(i, 'type', e.target.value)}
+                      className="w-full px-2 py-1.5 border rounded text-sm"
+                    >
+                      <option value="State">State</option>
+                      <option value="City">City</option>
+                      <option value="GeoCircle">GeoCircle (radius)</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-0.5">Name</label>
+                    <input placeholder="Tennessee" value={area.name || ''} onChange={e => setAreaServed(i, 'name', e.target.value)} className="w-full px-2 py-1.5 border rounded text-sm" />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-0.5">Wikipedia URL</label>
+                    <input placeholder="https://en.wikipedia.org/wiki/Tennessee" value={area.sameAs || ''} onChange={e => setAreaServed(i, 'sameAs', e.target.value)} className="w-full px-2 py-1.5 border rounded text-sm" />
+                  </div>
+                </div>
+              </div>
+            ))}
+            <button
+              onClick={addAreaServed}
+              className="w-full py-2 border-2 border-dashed border-gray-300 rounded-lg text-sm text-gray-500 hover:border-brand-400 hover:text-brand-600 transition-colors"
+            >
+              + Add Service Area
+            </button>
+          </div>
+        </Section>
+      )}
+
+      {/* Services Offered (hasOfferCatalog) — for homepage with business type */}
+      {showHomepageBizFields && (
+        <Section title="Services Offered" defaultOpen={false} sectionTip={SECTION_TIPS.servicesOffered}>
+          <div className="sm:col-span-2 space-y-3">
+            <p className="text-xs text-gray-500">List the services your business offers. These create a hasOfferCatalog in your schema.</p>
+            {(data.services || []).map((svc, i) => (
+              <div key={i} className="border border-gray-200 rounded-lg p-3 bg-gray-50/50">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-sm font-medium text-gray-600">Service {i + 1}</span>
+                  <button onClick={() => removeService(i)} className="text-xs text-red-500 hover:text-red-700">Remove</button>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-0.5">Service Name</label>
+                    <input placeholder="Roof Replacement" value={svc.name || ''} onChange={e => setService(i, 'name', e.target.value)} className="w-full px-2 py-1.5 border rounded text-sm" />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-0.5">Service URL (optional)</label>
+                    <input placeholder="https://example.com/services/roof-replacement/" value={svc.url || ''} onChange={e => setService(i, 'url', e.target.value)} className="w-full px-2 py-1.5 border rounded text-sm" />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <label className="block text-xs text-gray-500 mb-0.5">Description (optional)</label>
+                    <input placeholder="Complete roof replacement for residential and commercial properties" value={svc.description || ''} onChange={e => setService(i, 'description', e.target.value)} className="w-full px-2 py-1.5 border rounded text-sm" />
+                  </div>
+                </div>
+              </div>
+            ))}
+            <button
+              onClick={addService}
+              className="w-full py-2 border-2 border-dashed border-gray-300 rounded-lg text-sm text-gray-500 hover:border-brand-400 hover:text-brand-600 transition-colors"
+            >
+              + Add Service
+            </button>
+          </div>
+        </Section>
+      )}
+
+      {/* Additional Business Signals — for homepage with business type */}
+      {showHomepageBizFields && (
+        <Section title="Additional Business Signals" defaultOpen={false} sectionTip={SECTION_TIPS.additionalSignals}>
+          <Field label="Slogan" name="slogan" value={data.slogan} onChange={set} placeholder="Your trusted local roofing experts" />
+          <TextArea label="Knows About" name="knowsAboutText" value={data.knowsAboutText} onChange={set} placeholder="Roofing, Solar Energy, Hail Damage Repair" hint="Comma-separated topics your business specializes in" rows={1} />
+          <Field label="Aggregate Rating Value" name="aggregateRatingValue" value={data.aggregateRatingValue} onChange={set} placeholder="4.8" half hint="Average rating (e.g. from Google or Yelp)" />
+          <Field label="Aggregate Rating Count" name="aggregateRatingCount" value={data.aggregateRatingCount} onChange={set} placeholder="523" half hint="Total number of reviews" />
+          <div className="sm:col-span-2">
+            <p className="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+              Use ratings from Google, Yelp, or BBB — not self-hosted reviews. Google may issue manual actions for self-served aggregate ratings.
+            </p>
+          </div>
+        </Section>
+      )}
+
       {/* Page / Article Info */}
       <Section title="Page / Article Details" defaultOpen={tmpl.id === 'blog' || tmpl.id === 'faq'} sectionTip={SECTION_TIPS.pageArticle}>
         {/* URL Auto-Fill — extract metadata from a live page */}
@@ -429,8 +609,12 @@ export default function SchemaForm({ data, onChange, template }) {
         <TextArea label="Page Description" name="pageDescription" value={data.pageDescription} onChange={set} placeholder="Meta description for the page" />
         <Field label="Page URL" name="pageUrl" value={data.pageUrl} onChange={set} placeholder="https://acmeplumbing.com/locations/nashville-tn/" />
         <Field label="Page Image URL" name="pageImage" value={data.pageImage} onChange={set} placeholder="https://acmeplumbing.com/hero.jpg" />
-        <Field label="Date Published" name="datePublished" value={data.datePublished} onChange={set} type="date" half hint="Time will be added automatically for ISO 8601" />
-        <Field label="Date Modified" name="dateModified" value={data.dateModified} onChange={set} type="date" half hint="Time will be added automatically for ISO 8601" />
+        {!isHomepage && (
+          <>
+            <Field label="Date Published" name="datePublished" value={data.datePublished} onChange={set} type="date" half hint="Time will be added automatically for ISO 8601" />
+            <Field label="Date Modified" name="dateModified" value={data.dateModified} onChange={set} type="date" half hint="Time will be added automatically for ISO 8601" />
+          </>
+        )}
       </Section>
 
       {/* Author (for blog) */}
@@ -444,12 +628,46 @@ export default function SchemaForm({ data, onChange, template }) {
         </Section>
       )}
 
-      {/* Topic Entities */}
+      {/* Topic Entities — dynamic list */}
       <Section title="Topic Entities" defaultOpen={false} sectionTip={SECTION_TIPS.topicEntities}>
-        <Field label="Topic 1 Name" name="topic1Name" value={data.topic1Name} onChange={set} placeholder="Roof Replacement" half />
-        <Field label="Topic 1 Wikipedia" name="topic1Wiki" value={data.topic1Wiki} onChange={set} placeholder="https://en.wikipedia.org/wiki/Roofing" half />
-        <Field label="Topic 2 Name" name="topic2Name" value={data.topic2Name} onChange={set} placeholder="Solar Panel" half />
-        <Field label="Topic 2 Wikipedia" name="topic2Wiki" value={data.topic2Wiki} onChange={set} placeholder="https://en.wikipedia.org/wiki/Solar_panel" half />
+        <div className="sm:col-span-2 space-y-3">
+          <p className="text-xs text-gray-500">Connect your content to the Knowledge Graph. Wikipedia links increase AI citation rates by up to 2.5x.</p>
+          {getTopics().map((topic, i) => (
+            <div key={i} className="flex items-start gap-2">
+              <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <input
+                  placeholder={`Topic ${i + 1} Name`}
+                  value={topic.name || ''}
+                  onChange={e => setTopic(i, 'name', e.target.value)}
+                  className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+                />
+                <input
+                  placeholder="https://en.wikipedia.org/wiki/..."
+                  value={topic.wiki || ''}
+                  onChange={e => setTopic(i, 'wiki', e.target.value)}
+                  className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+                />
+              </div>
+              {getTopics().length > 1 && (
+                <button
+                  onClick={() => removeTopic(i)}
+                  className="mt-1 text-xs text-red-400 hover:text-red-600 shrink-0"
+                  title="Remove topic"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+          ))}
+          {getTopics().length < 10 && (
+            <button
+              onClick={addTopic}
+              className="w-full py-2 border-2 border-dashed border-gray-300 rounded-lg text-sm text-gray-500 hover:border-brand-400 hover:text-brand-600 transition-colors"
+            >
+              + Add Topic Entity {getTopics().length >= 3 ? `(${getTopics().length}/10)` : ''}
+            </button>
+          )}
+        </div>
       </Section>
 
       {/* Breadcrumb — available on all page types */}
@@ -549,7 +767,7 @@ export default function SchemaForm({ data, onChange, template }) {
       )}
 
       {/* Google Maps link */}
-      {showGBP && data.gbpStatus !== 'no-address' && (
+      {(showGBP && data.gbpStatus !== 'no-address' || showHomepageBizFields) && (
         <Section title="Advanced Properties" defaultOpen={false} sectionTip={SECTION_TIPS.advanced}>
           <Field label="Google Maps Link" name="hasMap" value={data.hasMap} onChange={set} placeholder="https://maps.google.com/?cid=..." hint="Your Google Maps or GBP URL" />
           <Field label="Contact Phone" name="contactPointPhone" value={data.contactPointPhone} onChange={set} placeholder="+18005551234" half />
