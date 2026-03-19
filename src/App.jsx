@@ -9,7 +9,7 @@ import { validateSchema } from './utils/validator';
 
 const DEFAULT_DATA = {
   gbpStatus: 'yes-address',
-  businessType: 'LocalBusiness',
+  businessType: 'Organization',
   brandName: '',
   brandDomain: '',
   brandDescription: '',
@@ -66,6 +66,17 @@ const DEFAULT_DATA = {
   topic1Wiki: '',
   topic2Name: '',
   topic2Wiki: '',
+  topics: [{ name: '', wiki: '' }, { name: '', wiki: '' }, { name: '', wiki: '' }],
+  services: [],
+  slogan: '',
+  aggregateRatingValue: '',
+  aggregateRatingCount: '',
+  currenciesAccepted: 'USD',
+  knowsAboutText: '',
+  hqLat: '',
+  hqLng: '',
+  areaServed: [],
+  homepageSAB: false,
   hoursDays: '["Monday","Tuesday","Wednesday","Thursday","Friday"]',
   hoursDaysPreset: 'Mon-Fri',
   hoursOpen: '08:00',
@@ -90,10 +101,21 @@ const DEFAULT_DATA = {
 };
 
 // Persist form data to localStorage
+function migrateTopics(data) {
+  if (!data.topics || data.topics.length === 0) {
+    const migrated = [];
+    if (data.topic1Name) migrated.push({ name: data.topic1Name, wiki: data.topic1Wiki || '' });
+    if (data.topic2Name) migrated.push({ name: data.topic2Name, wiki: data.topic2Wiki || '' });
+    while (migrated.length < 3) migrated.push({ name: '', wiki: '' });
+    data.topics = migrated;
+  }
+  return data;
+}
+
 function loadSavedData() {
   try {
     const saved = localStorage.getItem('schema-generator-data');
-    if (saved) return { ...DEFAULT_DATA, ...JSON.parse(saved) };
+    if (saved) return migrateTopics({ ...DEFAULT_DATA, ...JSON.parse(saved) });
   } catch {}
   return { ...DEFAULT_DATA };
 }
@@ -211,7 +233,7 @@ export default function App() {
   const handleLoadClient = (index) => {
     const client = savedClients[index];
     if (!client) return;
-    setFormData({ ...DEFAULT_DATA, ...client.data });
+    setFormData(migrateTopics({ ...DEFAULT_DATA, ...client.data }));
     setTemplateId(client.templateId || 'homepage');
     window.scrollTo(0, 0);
   };

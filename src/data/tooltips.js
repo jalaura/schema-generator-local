@@ -106,6 +106,17 @@ export const FIELD_TIPS = {
   // Search Action
   searchUrlTemplate: "Your site's search URL with {search_term_string} as the query placeholder. Enables Google's Sitelinks Search Box, which adds a search field directly in your search result. Leave blank if your site doesn't have search functionality.",
 
+  // Geo Coordinates (HQ)
+  hqLat: "Latitude coordinate for your business headquarters (e.g. 45.7833). Creates a GeoCoordinates entity for map accuracy in local search results.",
+  hqLng: "Longitude coordinate for your business headquarters (e.g. -108.5007). Right-click on Google Maps to find exact coordinates.",
+
+  // Additional Business Signals
+  slogan: "Your business tagline or slogan. Maps to the slogan property in Schema.org and can appear in knowledge panels.",
+  knowsAboutText: "Comma-separated list of topics your business specializes in (e.g. 'Roofing, Solar Energy, Hail Damage Repair'). Creates knowsAbout entries that help Google understand your expertise areas.",
+  aggregateRatingValue: "Your average star rating from a third-party review platform (Google, Yelp, BBB). Maps to the aggregateRating property. Use the exact value from the platform.",
+  aggregateRatingCount: "Total number of reviews on the platform you're citing. Must match the real count — Google can verify this against your GBP listing.",
+  currenciesAccepted: "Currency codes your business accepts (e.g. USD, CAD). Defaults to USD.",
+
   // Advanced Properties
   hasMap: "Your Google Maps URL or Google Business Profile URL (e.g. https://maps.google.com/?cid=...). Creates the hasMap property linking your LocalBusiness to Google Maps.",
   contactPointPhone: "A dedicated customer service phone number. Creates a ContactPoint entity separate from your main business phone — useful for businesses with different departments.",
@@ -129,5 +140,8 @@ export const SECTION_TIPS = {
   breadcrumb: "BreadcrumbList shows Google your page hierarchy. It can display as breadcrumb navigation in search results and helps with site structure understanding.",
   faq: "FAQ schema can be added to any page type. While Google now limits FAQ rich results to government/health sites, the schema still helps AI search engines (ChatGPT, Perplexity, Google AI Overviews) extract and cite your content.",
   searchAction: "SearchAction enables Google's Sitelinks Search Box — a search field that appears directly in your search result on Google. Only works for sites with their own search functionality.",
+  serviceArea: "Define the geographic areas your business serves. Especially important for Service Area Businesses (SABs) that travel to customers rather than having a storefront.",
+  servicesOffered: "List specific services your business offers. Creates a hasOfferCatalog with Service entities — helps Google and AI systems understand exactly what you provide.",
+  additionalSignals: "Extra entity signals that strengthen your schema. knowsAbout topics, slogan, and aggregate ratings all contribute to richer knowledge panel data.",
   advanced: "Additional properties like Google Maps links and contact points. These aren't required but provide richer data for knowledge panels and local search features.",
 };

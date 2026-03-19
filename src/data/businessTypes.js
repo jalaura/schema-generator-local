@@ -3,6 +3,13 @@
 
 export const BUSINESS_CATEGORIES = [
   {
+    category: "General",
+    parent: "Organization",
+    types: [
+      { value: "Organization", label: "Organization (Default)", keywords: ["organization", "company", "nonprofit", "corporation", "general"] },
+    ]
+  },
+  {
     category: "Automotive",
     parent: "AutomotiveBusiness",
     types: [

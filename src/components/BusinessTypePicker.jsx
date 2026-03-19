@@ -61,30 +61,43 @@ export default function BusinessTypePicker({ value, onChange }) {
 
       {isOpen && (
         <div className="absolute z-50 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-72 overflow-y-auto">
-          {Object.keys(grouped).length === 0 ? (
+          {Object.keys(grouped).length === 0 && !query.trim() ? (
             <div className="px-3 py-4 text-sm text-gray-500 text-center">
               No matching business types found. Try a different search term.
             </div>
           ) : (
-            Object.entries(grouped).map(([category, types]) => (
-              <div key={category}>
-                <div className="sticky top-0 bg-gray-50 px-3 py-1.5 text-xs font-semibold text-gray-500 uppercase tracking-wider border-b">
-                  {category}
+            <>
+              {Object.entries(grouped).map(([category, types]) => (
+                <div key={category}>
+                  <div className="sticky top-0 bg-gray-50 px-3 py-1.5 text-xs font-semibold text-gray-500 uppercase tracking-wider border-b">
+                    {category}
+                  </div>
+                  {types.map(t => (
+                    <button
+                      key={t.value}
+                      onClick={() => { onChange(t.value); setQuery(''); setIsOpen(false); }}
+                      className={`w-full text-left px-3 py-2 text-sm hover:bg-brand-50 transition-colors ${
+                        value === t.value ? 'bg-brand-50 text-brand-700 font-medium' : 'text-gray-700'
+                      }`}
+                    >
+                      {t.label}
+                      {value === t.value && <span className="float-right text-brand-500">&#10003;</span>}
+                    </button>
+                  ))}
                 </div>
-                {types.map(t => (
+              ))}
+              {query.trim() && !results.find(r => r.value.toLowerCase() === query.trim().toLowerCase()) && (
+                <div className="border-t border-gray-200">
                   <button
-                    key={t.value}
-                    onClick={() => { onChange(t.value); setQuery(''); setIsOpen(false); }}
-                    className={`w-full text-left px-3 py-2 text-sm hover:bg-brand-50 transition-colors ${
-                      value === t.value ? 'bg-brand-50 text-brand-700 font-medium' : 'text-gray-700'
-                    }`}
+                    onClick={() => { onChange(query.trim()); setQuery(''); setIsOpen(false); }}
+                    className="w-full text-left px-3 py-2.5 text-sm text-brand-600 hover:bg-brand-50 transition-colors"
                   >
-                    {t.label}
-                    {value === t.value && <span className="float-right text-brand-500">&#10003;</span>}
+                    Use custom type: <code className="font-mono bg-gray-100 px-1 rounded">{query.trim()}</code>
                   </button>
-                ))}
-              </div>
-            ))
+                  <p className="px-3 pb-2 text-xs text-gray-400">Schema.org has 800+ types — enter any valid type name</p>
+                </div>
+              )}
+            </>
           )}
         </div>
       )}

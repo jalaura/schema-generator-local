@@ -29,54 +29,87 @@ export function validateSchema(json, templateId) {
 
   // Validate each entity in the graph
   graph.forEach((entity, i) => {
-    const type = entity['@type'];
-    const prefix = type || 'Unknown entity';
+    const rawType = entity['@type'];
+    // Handle array @type (e.g. ["RoofingContractor", "LocalBusiness"])
+    const type = Array.isArray(rawType) ? rawType[0] : rawType;
+    const typeLabel = Array.isArray(rawType) ? rawType.join(', ') : rawType;
+    const prefix = typeLabel || 'Unknown entity';
 
-    if (!type) {
+    if (!rawType) {
       errors.push({ field: prefix, message: 'Missing @type property' });
       return;
     }
 
     // Check @id exists
-    if (!entity['@id'] && !['BreadcrumbList', 'OpeningHoursSpecification'].includes(type)) {
+    const skipIdTypes = ['BreadcrumbList', 'OpeningHoursSpecification'];
+    const hasSkipType = Array.isArray(rawType) ? rawType.some(t => skipIdTypes.includes(t)) : skipIdTypes.includes(rawType);
+    if (!entity['@id'] && !hasSkipType) {
       warnings.push({ field: prefix, message: 'Missing identifier — this is auto-generated when you fill in the Website URL' });
     }
 
+    // Check if this is a homepage hybrid (Organization + LocalBusiness type)
+    const isHomepageHybrid = Array.isArray(rawType) && rawType.includes('LocalBusiness')
+      && entity['@id'] && entity['@id'].includes('#organization');
+
     // Type-specific validation
-    switch (type) {
-      case 'Organization':
-        validateOrganization(entity, prefix, errors, warnings);
-        break;
-      case 'WebSite':
-        validateWebSite(entity, prefix, errors, warnings);
-        break;
-      case 'WebPage':
-        validateWebPage(entity, prefix, errors, warnings);
-        break;
-      case 'Article':
-      case 'BlogPosting':
-      case 'NewsArticle':
-        validateArticle(entity, prefix, errors, warnings);
-        break;
-      case 'BreadcrumbList':
-        validateBreadcrumb(entity, prefix, errors, warnings);
-        break;
-      case 'FAQPage':
-        validateFAQ(entity, prefix, errors, warnings);
-        break;
-      case 'Service':
-        validateService(entity, prefix, errors, warnings);
-        break;
-      default:
-        // Assume LocalBusiness subtype
-        validateLocalBusiness(entity, prefix, errors, warnings);
-        break;
+    if (isHomepageHybrid) {
+      // Hybrid Organization + LocalBusiness on homepage — validate as Organization
+      validateOrganization(entity, prefix, errors, warnings);
+    } else if (type === 'Organization') {
+      validateOrganization(entity, prefix, errors, warnings);
+    } else if (type === 'WebSite') {
+      validateWebSite(entity, prefix, errors, warnings);
+    } else if (type === 'WebPage') {
+      validateWebPage(entity, prefix, errors, warnings);
+    } else if (['Article', 'BlogPosting', 'NewsArticle'].includes(type)) {
+      validateArticle(entity, prefix, errors, warnings);
+    } else if (type === 'BreadcrumbList') {
+      validateBreadcrumb(entity, prefix, errors, warnings);
+    } else if (type === 'FAQPage') {
+      validateFAQ(entity, prefix, errors, warnings);
+    } else if (type === 'Service') {
+      validateService(entity, prefix, errors, warnings);
+    } else {
+      // Assume LocalBusiness subtype
+      validateLocalBusiness(entity, prefix, errors, warnings);
     }
   });
 
   // Calculate completeness score
-  const maxErrors = Math.max(errors.length + warnings.length, 1);
-  const score = Math.max(0, Math.round(100 - (errors.length * 15 + warnings.length * 5)));
+  let score = Math.max(0, Math.round(100 - (errors.length * 15 + warnings.length * 5)));
+
+  // Bonus scoring for enhanced schema completeness (homepage-focused)
+  if (templateId === 'homepage') {
+    let bonus = 0;
+    const firstEntity = graph[0];
+    const rawType = firstEntity?.['@type'];
+    const primaryType = Array.isArray(rawType) ? rawType[0] : rawType;
+    const isSpecificType = primaryType && primaryType !== 'Organization' && primaryType !== 'LocalBusiness';
+
+    // Business Type specified (not generic Organization): +5%
+    if (isSpecificType) bonus += 5;
+
+    // Geo coordinates filled: +5%
+    if (firstEntity?.geo) bonus += 5;
+
+    // Opening hours filled: +3%
+    if (firstEntity?.openingHoursSpecification) bonus += 3;
+
+    // At least 3 services in hasOfferCatalog: +5%
+    if (firstEntity?.hasOfferCatalog?.itemListElement?.length >= 3) bonus += 5;
+
+    // areaServed filled: +3%
+    if (firstEntity?.areaServed) bonus += 3;
+
+    // aggregateRating filled: +4%
+    if (firstEntity?.aggregateRating) bonus += 4;
+
+    // At least 3 topic entities with Wikipedia URLs: +3%
+    const aboutEntities = firstEntity?.about;
+    if (Array.isArray(aboutEntities) && aboutEntities.filter(e => e.sameAs).length >= 3) bonus += 3;
+
+    score += bonus;
+  }
 
   return { errors, warnings, score: Math.min(100, score) };
 }
