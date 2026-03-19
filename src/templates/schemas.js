@@ -164,16 +164,22 @@ function buildLocalBusiness(data, loc = {}) {
   if (stateName) areas.push(clean({ "@type": "State", "name": stateName, "sameAs": stateWiki || undefined }));
   if (areas.length > 0) biz.areaServed = areas;
 
-  // Hours
-  if (data.hoursDays && data.hoursOpen && data.hoursClose) {
+  // Hours — supports multiple blocks (e.g. Mon-Fri 8-5, Sat 9-3)
+  let hoursBlocks = data.hoursBlocks || [];
+  // Backward compat: migrate old flat fields
+  if (hoursBlocks.length === 0 && data.hoursDays && data.hoursOpen && data.hoursClose) {
     let days;
-    try { days = JSON.parse(data.hoursDays); } catch { days = data.hoursDays; }
-    biz.openingHoursSpecification = [{
+    try { days = JSON.parse(data.hoursDays); } catch { days = []; }
+    hoursBlocks = [{ days: Array.isArray(days) ? days : [], opens: data.hoursOpen, closes: data.hoursClose }];
+  }
+  const validBlocks = hoursBlocks.filter(b => b.days && b.days.length > 0 && b.opens && b.closes);
+  if (validBlocks.length > 0) {
+    biz.openingHoursSpecification = validBlocks.map(b => ({
       "@type": "OpeningHoursSpecification",
-      "dayOfWeek": days,
-      "opens": data.hoursOpen,
-      "closes": data.hoursClose
-    }];
+      "dayOfWeek": b.days,
+      "opens": b.opens,
+      "closes": b.closes
+    }));
   }
 
   if (data.priceRange) biz.priceRange = data.priceRange;
