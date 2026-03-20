@@ -64,7 +64,6 @@ function buildOrganization(data, { applyBusinessType = true } = {}) {
       "@type": "ImageObject",
       "@id": `${data.brandDomain}/#logo`,
       "contentUrl": data.brandLogoUrl,
-      "url": data.brandDomain,
       "caption": data.brandName
     } : undefined,
     "telephone": data.brandPhone || undefined,
@@ -83,12 +82,19 @@ function buildOrganization(data, { applyBusinessType = true } = {}) {
     });
   }
 
-  if (data.foundingDate) org.foundingDate = data.foundingDate;
+  if (data.foundingDate) {
+    // Normalize bare year (e.g. "2011") to ISO date "2011-01-01"
+    const fd = String(data.foundingDate).trim();
+    org.foundingDate = /^\d{4}$/.test(fd) ? `${fd}-01-01` : fd;
+  }
   if (data.numberOfEmployees) {
-    org.numberOfEmployees = {
-      "@type": "QuantitativeValue",
-      "value": data.numberOfEmployees
-    };
+    const numVal = parseInt(data.numberOfEmployees, 10);
+    if (!isNaN(numVal)) {
+      org.numberOfEmployees = {
+        "@type": "QuantitativeValue",
+        "value": numVal
+      };
+    }
   }
 
   const sameAs = buildSameAs(data);
@@ -123,14 +129,26 @@ function buildLocalBusiness(data, loc = {}) {
   const slug = loc.slug || data.locationSlug || '';
   const locationPath = slug ? `/locations/${slug}` : '/locations';
   const biz = {
-    "@type": (data.businessType && data.businessType !== 'Organization') ? data.businessType : "LocalBusiness",
+    "@type": (data.businessType && data.businessType !== 'Organization' && data.businessType !== 'LocalBusiness')
+      ? [data.businessType, 'LocalBusiness']
+      : "LocalBusiness",
     "@id": normalizeUrl(`${data.brandDomain}${locationPath}/#localbusiness`),
     "name": loc.name ? `${data.brandName} - ${loc.name}` : data.brandName,
     "image": loc.image || data.locationImage || undefined,
     "url": loc.pageUrl || data.locationPageUrl || data.brandDomain,
     "telephone": loc.phone || data.locationPhone || data.brandPhone || undefined,
-    "parentOrganization": { "@id": `${data.brandDomain}/#organization` },
+    "email": loc.email || data.locationEmail || data.brandEmail || undefined,
+    "parentOrganization": {
+      "@id": `${data.brandDomain}/#organization`,
+      "@type": "Organization",
+      "name": data.brandName,
+      "url": data.brandDomain
+    },
   };
+
+  // Social profiles — inherit from organization for single-location
+  const sameAs = buildSameAs(data);
+  if (sameAs.length > 0) biz.sameAs = sameAs;
 
   // Address handling based on GBP status
   if (data.gbpStatus === 'no-address') {
@@ -196,26 +214,74 @@ function buildLocalBusiness(data, loc = {}) {
   if (data.paymentAccepted) biz.paymentAccepted = data.paymentAccepted;
   if (data.hasMap) biz.hasMap = data.hasMap;
 
+  // Services offered (hasOfferCatalog)
+  const services = (data.services || []).filter(s => s.name);
+  if (services.length > 0) {
+    biz.hasOfferCatalog = {
+      "@type": "OfferCatalog",
+      "name": "Services",
+      "itemListElement": services.map(s => clean({
+        "@type": "Offer",
+        "itemOffered": clean({
+          "@type": "Service",
+          "name": s.name,
+          "description": s.description || undefined,
+          "url": s.url || undefined
+        })
+      }))
+    };
+  }
+
+  // Aggregate rating
+  if (data.aggregateRatingValue && data.aggregateRatingCount) {
+    biz.aggregateRating = {
+      "@type": "AggregateRating",
+      "ratingValue": data.aggregateRatingValue,
+      "reviewCount": data.aggregateRatingCount
+    };
+  }
+
+  // Individual reviews
+  const reviews = (data.reviews || []).filter(r => r.author && r.body);
+  if (reviews.length > 0) {
+    biz.review = reviews.map(r => clean({
+      "@type": "Review",
+      "author": { "@type": "Person", "name": r.author },
+      "datePublished": r.date || undefined,
+      "reviewBody": r.body,
+      "reviewRating": r.rating ? {
+        "@type": "Rating",
+        "ratingValue": r.rating,
+        "bestRating": "5"
+      } : undefined
+    }));
+  }
+
   return biz;
 }
 
 function buildService(data) {
+  // Build provider @id using same logic as buildLocalBusiness for consistency
+  let providerId;
+  if (data.locationSlug) {
+    const locationPath = `/locations/${data.locationSlug}`;
+    providerId = normalizeUrl(`${data.brandDomain}${locationPath}/#localbusiness`);
+  } else {
+    providerId = `${data.brandDomain}/#organization`;
+  }
+
   return clean({
     "@type": "Service",
     "@id": data.locationSlug
       ? `${data.brandDomain}/#service-${data.serviceSlug}-${data.locationSlug}`
       : `${data.brandDomain}/#service-${data.serviceSlug}`,
-    "name": data.locationCity
-      ? `${data.serviceName} in ${data.locationCity} ${data.locationStateAbbr || ''}`
-      : data.serviceName,
+    "name": data.serviceName,
     "description": data.serviceDescription || undefined,
     "image": data.serviceImage || undefined,
     "url": data.servicePageUrl || data.pageUrl || undefined,
     "serviceType": data.serviceType || undefined,
     "category": data.serviceCategory || undefined,
-    "provider": data.locationSlug
-      ? { "@id": normalizeUrl(`${data.brandDomain}/locations/${data.locationSlug}/#localbusiness`) }
-      : { "@id": `${data.brandDomain}/#organization` },
+    "provider": { "@id": providerId },
     "areaServed": data.locationCity ? clean({
       "@type": "City",
       "name": data.locationCity,
@@ -232,14 +298,18 @@ function buildBreadcrumb(items, id) {
   // Google requires at least 2 items for a valid breadcrumb
   if (!items || items.length < 2) return null;
 
+  // Filter out non-last items that have no URL (Google requires item URL on all but last)
+  const validItems = items.filter((item, i) => i === items.length - 1 || item.url);
+  if (validItems.length < 2) return null;
+
   return {
     "@type": "BreadcrumbList",
     "@id": id,
-    "itemListElement": items.map((item, i) => clean({
+    "itemListElement": validItems.map((item, i) => clean({
       "@type": "ListItem",
       "position": i + 1,
       "name": item.name,
-      "item": i < items.length - 1 ? item.url : undefined
+      "item": i < validItems.length - 1 ? item.url : undefined
     }))
   };
 }
@@ -264,11 +334,16 @@ function buildArticle(data, aboutEntities = []) {
       "worksFor": { "@id": `${data.brandDomain}/#organization` }
     });
   } else {
-    article.author = { "@id": `${data.brandDomain}/#organization` };
+    // Fall back to Organization as author with name (Google requires name on author)
+    article.author = {
+      "@type": "Organization",
+      "@id": `${data.brandDomain}/#organization`,
+      "name": data.brandName
+    };
   }
 
   article.publisher = { "@id": `${data.brandDomain}/#organization` };
-  article.mainEntityOfPage = data.pageUrl || data.brandDomain;
+  article.mainEntityOfPage = { "@type": "WebPage", "@id": data.pageUrl || data.brandDomain };
 
   if (aboutEntities.length > 0) {
     article.about = aboutEntities.map(e => clean({
@@ -492,6 +567,18 @@ export function generateLocationPage(data) {
   ], bcId);
   if (bc) graph.push(bc);
 
+  // WebPage
+  const pageUrl = data.locationPageUrl || data.brandDomain;
+  graph.push(clean({
+    "@type": "WebPage",
+    "@id": `${pageUrl}#webpage`,
+    "url": pageUrl,
+    "name": data.pageTitle || `${data.brandName} - ${data.locationCity || ''}`.trim(),
+    "isPartOf": { "@id": `${data.brandDomain}/#website` },
+    "about": { "@id": `${data.brandDomain}/#organization` },
+    ...(bc ? { "breadcrumb": { "@id": bcId } } : {})
+  }));
+
   // Article
   const aboutEntities = collectAboutEntities(data);
   if (data.locationCity && !aboutEntities.find(e => e.name?.includes(data.locationCity))) {
@@ -518,6 +605,18 @@ export function generateServicePage(data) {
     { name: data.serviceName || "Service" }
   ], bcId);
   if (bc) graph.push(bc);
+
+  // WebPage
+  const pageUrl = data.servicePageUrl || data.pageUrl || data.brandDomain;
+  graph.push(clean({
+    "@type": "WebPage",
+    "@id": `${pageUrl}#webpage`,
+    "url": pageUrl,
+    "name": data.pageTitle || data.serviceName || data.brandName,
+    "isPartOf": { "@id": `${data.brandDomain}/#website` },
+    "about": { "@id": `${data.brandDomain}/#organization` },
+    ...(bc ? { "breadcrumb": { "@id": bcId } } : {})
+  }));
 
   const aboutEntities = collectAboutEntities(data);
   if (data.serviceName && !aboutEntities.find(e => e.name === data.serviceName)) {
@@ -549,6 +648,18 @@ export function generateServiceLocationCombo(data) {
     { name: `${data.locationCity || ''} ${data.locationStateAbbr || ''}`.trim() }
   ], bcId);
   if (bc) graph.push(bc);
+
+  // WebPage
+  const pageUrl = data.pageUrl || data.brandDomain;
+  graph.push(clean({
+    "@type": "WebPage",
+    "@id": `${pageUrl}#webpage`,
+    "url": pageUrl,
+    "name": data.pageTitle || `${data.serviceName || 'Service'} in ${data.locationCity || ''}`.trim(),
+    "isPartOf": { "@id": `${data.brandDomain}/#website` },
+    "about": { "@id": `${data.brandDomain}/#organization` },
+    ...(bc ? { "breadcrumb": { "@id": bcId } } : {})
+  }));
 
   const aboutEntities = collectAboutEntities(data);
   if (data.serviceName && !aboutEntities.find(e => e.name === data.serviceName)) {
@@ -588,7 +699,7 @@ export function generateMultiLocationHub(data) {
     "@id": `${data.brandDomain}/locations/#webpage`,
     "url": `${data.brandDomain}/locations/`,
     "name": `${data.brandName} Locations`,
-    "description": `${data.brandName} service locations across the United States.`,
+    "description": data.pageDescription || `${data.brandName} service locations`,
     "isPartOf": { "@id": `${data.brandDomain}/#website` },
     "about": { "@id": `${data.brandDomain}/#organization` },
     ...(bc ? { "breadcrumb": { "@id": bcId } } : {})
@@ -612,6 +723,18 @@ export function generateBlogArticle(data) {
   ], bcId);
   if (bc) graph.push(bc);
 
+  // WebPage
+  const pageUrl = data.pageUrl || data.brandDomain;
+  graph.push(clean({
+    "@type": "WebPage",
+    "@id": `${pageUrl}#webpage`,
+    "url": pageUrl,
+    "name": data.pageTitle || "Article",
+    "isPartOf": { "@id": `${data.brandDomain}/#website` },
+    "about": { "@id": `${data.brandDomain}/#organization` },
+    ...(bc ? { "breadcrumb": { "@id": bcId } } : {})
+  }));
+
   const aboutEntities = collectAboutEntities(data);
   graph.push(buildArticle(data, aboutEntities));
 
@@ -632,6 +755,19 @@ export function generateFaqPage(data) {
     { name: data.pageTitle || "FAQ" }
   ], bcId);
   if (bc) graph.push(bc);
+
+  // WebPage — mainEntity references the FAQPage
+  const pageUrl = data.pageUrl || data.brandDomain;
+  graph.push(clean({
+    "@type": "WebPage",
+    "@id": `${pageUrl}#webpage`,
+    "url": pageUrl,
+    "name": data.pageTitle || "FAQ",
+    "isPartOf": { "@id": `${data.brandDomain}/#website` },
+    "about": { "@id": `${data.brandDomain}/#organization` },
+    "mainEntity": { "@id": `${pageUrl}#faqpage` },
+    ...(bc ? { "breadcrumb": { "@id": bcId } } : {})
+  }));
 
   // FAQ (always included for the FAQ template)
   maybeAddFAQ(graph, data);
