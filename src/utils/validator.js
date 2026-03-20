@@ -75,41 +75,52 @@ export function validateSchema(json, templateId) {
     }
   });
 
-  // Calculate completeness score
-  let score = Math.max(0, Math.round(100 - (errors.length * 15 + warnings.length * 5)));
+  // Calculate completeness score — softer penalties (errors still strong, warnings lighter)
+  let score = Math.max(0, Math.round(100 - (errors.length * 12 + warnings.length * 3)));
 
-  // Bonus scoring for enhanced schema completeness (homepage-focused)
-  if (templateId === 'homepage') {
-    let bonus = 0;
-    const firstEntity = graph[0];
-    const rawType = firstEntity?.['@type'];
-    const primaryType = Array.isArray(rawType) ? rawType[0] : rawType;
-    const isSpecificType = primaryType && primaryType !== 'Organization' && primaryType !== 'LocalBusiness';
+  // Bonus scoring for enhanced schema completeness — applies to ALL templates
+  let bonus = 0;
+  const firstEntity = graph[0];
+  const rawType = firstEntity?.['@type'];
+  const primaryType = Array.isArray(rawType) ? rawType[0] : rawType;
+  const isSpecificType = primaryType && primaryType !== 'Organization' && primaryType !== 'LocalBusiness';
 
-    // Business Type specified (not generic Organization): +5%
-    if (isSpecificType) bonus += 5;
+  // Business Type specified (not generic Organization/LocalBusiness): +5%
+  if (isSpecificType) bonus += 5;
 
-    // Geo coordinates filled: +5%
-    if (firstEntity?.geo) bonus += 5;
+  // Find the LocalBusiness entity in the graph (if any)
+  const lbEntity = graph.find(e => {
+    const t = e?.['@type'];
+    return t === 'LocalBusiness' || (Array.isArray(t) && t.includes('LocalBusiness') && e['@id']?.includes('#localbusiness'));
+  });
+  // Use the primary entity (org or LB) for bonus checks
+  const bizEntity = lbEntity || firstEntity;
 
-    // Opening hours filled: +3%
-    if (firstEntity?.openingHoursSpecification) bonus += 3;
+  // Geo coordinates filled: +5%
+  if (bizEntity?.geo) bonus += 5;
 
-    // At least 3 services in hasOfferCatalog: +5%
-    if (firstEntity?.hasOfferCatalog?.itemListElement?.length >= 3) bonus += 5;
+  // Opening hours filled: +3%
+  if (bizEntity?.openingHoursSpecification) bonus += 3;
 
-    // areaServed filled: +3%
-    if (firstEntity?.areaServed) bonus += 3;
+  // At least 3 services in hasOfferCatalog: +5%
+  if (bizEntity?.hasOfferCatalog?.itemListElement?.length >= 3) bonus += 5;
 
-    // aggregateRating filled: +4%
-    if (firstEntity?.aggregateRating) bonus += 4;
+  // areaServed filled: +3%
+  if (bizEntity?.areaServed) bonus += 3;
 
-    // At least 3 topic entities with Wikipedia URLs: +3%
+  // aggregateRating filled: +4%
+  if (bizEntity?.aggregateRating) bonus += 4;
+
+  // Homepage/org-only specific: topic entities with Wikipedia URLs
+  if (templateId === 'homepage' || templateId === 'org-only') {
     const aboutEntities = firstEntity?.about;
     if (Array.isArray(aboutEntities) && aboutEntities.filter(e => e.sameAs).length >= 3) bonus += 3;
-
-    score += bonus;
   }
+
+  // Social profiles present: +2%
+  if (firstEntity?.sameAs?.length >= 2) bonus += 2;
+
+  score += bonus;
 
   return { errors, warnings, score: Math.min(100, score) };
 }
@@ -137,9 +148,10 @@ function validateLocalBusiness(entity, prefix, errors, warnings) {
   if (!entity.geo) warnings.push({ field: `${prefix}.geo`, message: 'Geo coordinates (lat/lng) are recommended for map accuracy' });
   if (!entity.openingHoursSpecification) warnings.push({ field: `${prefix}`, message: 'Business hours are recommended — open the Business Hours section to add them' });
   if (!entity.image) warnings.push({ field: `${prefix}.image`, message: 'Business image is recommended' });
-  if (!entity.priceRange) warnings.push({ field: `${prefix}.priceRange`, message: 'Price range ($-$$$$) is recommended' });
   if (!entity.areaServed) warnings.push({ field: `${prefix}`, message: 'Area served is recommended — fill in Location Details to add it' });
-  if (entity['@type'] === 'LocalBusiness') {
+  const entityType = entity['@type'];
+  const isGenericLB = entityType === 'LocalBusiness' || (Array.isArray(entityType) && entityType.length === 1 && entityType[0] === 'LocalBusiness');
+  if (isGenericLB) {
     warnings.push({ field: `${prefix}.@type`, message: 'Consider using a more specific subtype (e.g., Plumber, Restaurant, Dentist) instead of generic LocalBusiness' });
   }
 }
