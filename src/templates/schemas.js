@@ -229,6 +229,9 @@ function buildService(data) {
 }
 
 function buildBreadcrumb(items, id) {
+  // Google requires at least 2 items for a valid breadcrumb
+  if (!items || items.length < 2) return null;
+
   return {
     "@type": "BreadcrumbList",
     "@id": id,
