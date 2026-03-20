@@ -120,6 +120,18 @@ export function validateSchema(json, templateId) {
   // Social profiles present: +2%
   if (firstEntity?.sameAs?.length >= 2) bonus += 2;
 
+  // AI-critical social profiles (Foursquare, Apple Business Connect, Wikidata): +2%
+  const allSameAs = (firstEntity?.sameAs || []).concat(bizEntity?.sameAs || []);
+  const hasAiProfiles = allSameAs.some(u => u?.includes('foursquare.com') || u?.includes('wikidata.org') || u?.includes('maps.apple.com'));
+  if (hasAiProfiles) bonus += 2;
+
+  // Article author has sameAs (E-E-A-T): +2%
+  const articleEntity = graph.find(e => e?.['@type'] === 'Article');
+  if (articleEntity?.author?.sameAs?.length > 0) bonus += 2;
+
+  // Article has wordCount: +1%
+  if (articleEntity?.wordCount) bonus += 1;
+
   score += bonus;
 
   return { errors, warnings, score: Math.min(100, score) };

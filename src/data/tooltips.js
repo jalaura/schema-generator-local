@@ -31,6 +31,11 @@ export const FIELD_TIPS = {
   youtubeUrl: "Your YouTube channel URL. Part of sameAs — video content signals authority and can appear in search results.",
   linkedinUrl: "Your LinkedIn company page URL. Part of sameAs — adds professional credibility to your entity profile.",
   yelpUrl: "Your Yelp business listing URL. Part of sameAs — especially important for local businesses as Yelp is a major citation source.",
+  tiktokUrl: "Your TikTok business profile URL. Part of sameAs — TikTok is increasingly used for local business discovery, especially among younger demographics.",
+  pinterestUrl: "Your Pinterest business profile URL. Part of sameAs — useful for businesses with visual services (home improvement, food, fashion).",
+  wikidataUrl: "Your Wikidata entity URL (e.g. https://www.wikidata.org/wiki/Q12345). Wikidata provides structured entity IDs that AI systems use for disambiguation. More reliable than Wikipedia for entity resolution.",
+  foursquareUrl: "Your Foursquare business listing URL. Critical for AI search — Foursquare powers approximately 70% of ChatGPT's local business results. A verified Foursquare listing significantly improves AI citation rates.",
+  appleBusinessUrl: "Your Apple Business Connect or Apple Maps URL. Essential for Siri and Apple Intelligence visibility — Apple uses this to verify and display your business in Maps and voice search results.",
 
   // Location Details
   locationCity: "The city name for this location. Used in the LocalBusiness address and areaServed. Must match your GBP listing exactly.",
@@ -40,6 +45,7 @@ export const FIELD_TIPS = {
   locationStreet: "Street address for this location. Hidden for SAB businesses. Must exactly match your GBP listing — even small differences (St vs Street) can hurt local rankings.",
   locationZip: "ZIP code for this location. Part of the PostalAddress and helps with geographic precision in local search results.",
   locationPhone: "Local phone number for this specific location in E.164 format. If different from your main number, helps Google associate the right phone with the right location.",
+  locationEmail: "Contact email for this specific location. Added to the LocalBusiness entity — useful for multi-location businesses with location-specific email addresses.",
   locationLat: "Latitude coordinate for this location (e.g. 36.1627). Combined with longitude, creates a GeoCoordinates entity that helps Google pinpoint your business on Maps.",
   locationLng: "Longitude coordinate for this location (e.g. -86.7816). Use Google Maps to find exact coordinates — right-click any location and copy the coordinates.",
   locationPageUrl: "The full URL of this location's dedicated page on your website. Becomes the 'url' property of the LocalBusiness entity.",
@@ -63,6 +69,8 @@ export const FIELD_TIPS = {
   servicePageUrl: "Full URL of the dedicated service page on your website. Links the Service entity to its canonical page.",
   serviceImage: "URL of an image representing this service. May appear in rich results for service-related searches.",
   serviceWiki: "Wikipedia URL for this type of service (e.g. https://en.wikipedia.org/wiki/Plumbing). Connects your service to the Knowledge Graph for entity disambiguation.",
+  servicePrice: "Starting or base price for this service. Creates an Offer entity with the price — helps Google display pricing information in search results.",
+  servicePriceCurrency: "ISO 4217 currency code for the service price (e.g. USD, CAD, GBP). Defaults to USD.",
 
   // Page / Article Details
   pageTitle: "The H1 title of this page. Maps to the 'headline' property in Article schema. Keep it under 110 characters for optimal display in search results.",
@@ -71,11 +79,15 @@ export const FIELD_TIPS = {
   pageImage: "URL of the main image for this page (hero image, featured image). Used in Article schema and can appear as a thumbnail in search results.",
   datePublished: "The date this page was first published (ISO 8601). Important for Article schema — Google uses this for freshness signals and may display it in search results.",
   dateModified: "The date this page was last updated. Critical for AI search — ChatGPT, Perplexity, and Google AI Overviews use this to determine content freshness. Update it whenever you revise the page.",
+  wordCount: "Approximate word count of the article. Helps search engines assess content depth — longer, comprehensive content often ranks better for informational queries.",
+  articleSection: "The section or category this article belongs to (e.g. 'Roofing Tips', 'Industry News'). Maps to the articleSection property and helps with content classification.",
 
   // Author Details
   authorName: "The name of the content author. Creates a Person entity linked to your Organization. Named authors boost E-E-A-T (Experience, Expertise, Authoritativeness, Trustworthiness) signals.",
   authorUrl: "URL of the author's profile page on your site (e.g. /team/john-smith/). Links the Person entity to their bio page, strengthening author authority.",
   authorTitle: "The author's job title or role (e.g. 'Senior Plumbing Technician'). Maps to the jobTitle property and reinforces topical expertise.",
+  authorLinkedinUrl: "Author's LinkedIn profile URL. Added to the author's sameAs array, strengthening E-E-A-T signals by connecting the author to their professional identity.",
+  authorTwitterUrl: "Author's X/Twitter profile URL. Added to the author's sameAs array — helps Google verify the author's online presence and expertise.",
   blogSectionName: "Display name for the blog/resource section in breadcrumbs (e.g. 'Blog', 'Resources', 'Articles'). Appears in BreadcrumbList navigation.",
   blogSectionSlug: "URL slug for the blog section (e.g. 'blog', 'resources'). Used in breadcrumb URLs to match your site structure.",
 
