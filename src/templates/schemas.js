@@ -42,15 +42,15 @@ function buildSameAs(data) {
   ].filter(Boolean);
 }
 
-function buildOrganization(data) {
-  const bt = data.businessType || 'Organization';
-  let type;
-  if (bt === 'Organization') {
-    type = 'Organization';
-  } else if (bt === 'LocalBusiness') {
-    type = 'LocalBusiness';
-  } else {
-    type = [bt, 'LocalBusiness'];
+function buildOrganization(data, { applyBusinessType = true } = {}) {
+  let type = 'Organization';
+  if (applyBusinessType) {
+    const bt = data.businessType || 'Organization';
+    if (bt === 'LocalBusiness') {
+      type = 'LocalBusiness';
+    } else if (bt !== 'Organization') {
+      type = [bt, 'LocalBusiness'];
+    }
   }
 
   const org = {
@@ -477,7 +477,7 @@ export function generateHomepage(data) {
 }
 
 export function generateLocationPage(data) {
-  const graph = [buildOrganization(data)];
+  const graph = [buildOrganization(data, { applyBusinessType: false })];
 
   if (data.gbpStatus !== 'no-address') {
     graph.push(buildLocalBusiness(data));
@@ -532,7 +532,7 @@ export function generateServicePage(data) {
 }
 
 export function generateServiceLocationCombo(data) {
-  const graph = [buildOrganization(data)];
+  const graph = [buildOrganization(data, { applyBusinessType: false })];
 
   if (data.gbpStatus !== 'no-address') {
     graph.push(buildLocalBusiness(data));
@@ -566,7 +566,7 @@ export function generateServiceLocationCombo(data) {
 }
 
 export function generateMultiLocationHub(data) {
-  const graph = [buildOrganization(data)];
+  const graph = [buildOrganization(data, { applyBusinessType: false })];
 
   // Add each location
   (data.locations || []).forEach(loc => {
