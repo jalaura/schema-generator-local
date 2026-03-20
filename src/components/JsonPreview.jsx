@@ -3,7 +3,7 @@ import { syntaxHighlight } from '../utils/validator';
 
 export default function JsonPreview({ schema, validation }) {
   const [copied, setCopied] = useState(false);
-  const [showScript, setShowScript] = useState(false);
+  const [showScript, setShowScript] = useState(true);
 
   const jsonString = schema ? JSON.stringify(schema, null, 2) : '';
   const highlighted = schema ? syntaxHighlight(schema) : '';
@@ -136,7 +136,10 @@ export default function JsonPreview({ schema, validation }) {
       {/* Deployment hint */}
       {schema && (
         <p className="mt-2 text-xs text-gray-500 text-center">
-          Click <strong>&lt;script&gt;</strong> above, then <strong>Copy</strong> and paste into your page's <code className="bg-gray-100 px-1 rounded">&lt;head&gt;</code> section.
+          {showScript
+            ? <>Copy and paste the full <code className="bg-gray-100 px-1 rounded">&lt;script&gt;</code> block into your page's <code className="bg-gray-100 px-1 rounded">&lt;head&gt;</code> or CMS code injection field.</>
+            : <>Showing raw JSON-LD only. Toggle <strong>&lt;script&gt;</strong> above to include the wrapper tags most CMS platforms require.</>
+          }
         </p>
       )}
 
