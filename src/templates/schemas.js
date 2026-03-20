@@ -43,8 +43,18 @@ function buildSameAs(data) {
 }
 
 function buildOrganization(data) {
+  const bt = data.businessType || 'Organization';
+  let type;
+  if (bt === 'Organization') {
+    type = 'Organization';
+  } else if (bt === 'LocalBusiness') {
+    type = 'LocalBusiness';
+  } else {
+    type = [bt, 'LocalBusiness'];
+  }
+
   const org = {
-    "@type": "Organization",
+    "@type": type,
     "@id": `${data.brandDomain}/#organization`,
     "name": data.brandName,
     "url": data.brandDomain,
@@ -357,14 +367,8 @@ export function generateHomepage(data) {
   const org = buildOrganization(data);
   const bt = data.businessType || 'Organization';
 
-  // Upgrade Organization to specific business type if selected
+  // Add homepage-specific LocalBusiness properties when a business type is selected
   if (bt !== 'Organization') {
-    if (bt === 'LocalBusiness') {
-      org['@type'] = 'LocalBusiness';
-    } else {
-      org['@type'] = [bt, 'LocalBusiness'];
-    }
-
     // Geo coordinates
     if (data.hqLat && data.hqLng) {
       org.geo = { "@type": "GeoCoordinates", "latitude": data.hqLat, "longitude": data.hqLng };
