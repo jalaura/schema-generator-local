@@ -38,7 +38,9 @@ function toISODateTime(dateStr) {
 function buildSameAs(data) {
   return [
     data.facebookUrl, data.instagramUrl, data.twitterUrl,
-    data.youtubeUrl, data.linkedinUrl, data.yelpUrl
+    data.youtubeUrl, data.linkedinUrl, data.yelpUrl,
+    data.tiktokUrl, data.pinterestUrl, data.wikidataUrl,
+    data.foursquareUrl, data.appleBusinessUrl
   ].filter(Boolean);
 }
 
@@ -270,6 +272,28 @@ function buildService(data) {
     providerId = `${data.brandDomain}/#organization`;
   }
 
+  // Build areaServed — use location city/state, or fall back to org-level areaServed
+  let areaServed;
+  if (data.locationCity) {
+    areaServed = clean({ "@type": "City", "name": data.locationCity, "sameAs": data.locationWiki || undefined });
+  } else if (data.locationState) {
+    areaServed = clean({ "@type": "State", "name": data.locationState, "sameAs": data.stateWiki || undefined });
+  } else if (data.areaServed && data.areaServed.length > 0) {
+    const areas = data.areaServed.filter(a => a.name).map(a => clean({
+      "@type": a.type || "State",
+      "name": a.name,
+      "sameAs": a.sameAs || undefined
+    }));
+    areaServed = areas.length === 1 ? areas[0] : areas.length > 1 ? areas : undefined;
+  }
+
+  // Build offers if price is provided
+  const offers = data.servicePrice ? clean({
+    "@type": "Offer",
+    "price": data.servicePrice,
+    "priceCurrency": data.servicePriceCurrency || "USD"
+  }) : undefined;
+
   return clean({
     "@type": "Service",
     "@id": data.locationSlug
@@ -282,15 +306,8 @@ function buildService(data) {
     "serviceType": data.serviceType || undefined,
     "category": data.serviceCategory || undefined,
     "provider": { "@id": providerId },
-    "areaServed": data.locationCity ? clean({
-      "@type": "City",
-      "name": data.locationCity,
-      "sameAs": data.locationWiki || undefined
-    }) : data.locationState ? clean({
-      "@type": "State",
-      "name": data.locationState,
-      "sameAs": data.stateWiki || undefined
-    }) : undefined
+    "areaServed": areaServed,
+    "offers": offers
   });
 }
 
@@ -323,15 +340,20 @@ function buildArticle(data, aboutEntities = []) {
     "image": data.pageImage || undefined,
     "datePublished": toISODateTime(data.datePublished),
     "dateModified": toISODateTime(data.dateModified),
+    "wordCount": data.wordCount ? parseInt(data.wordCount, 10) || undefined : undefined,
+    "articleSection": data.articleSection || undefined,
   };
 
   if (data.authorName) {
+    // Build author sameAs from social profiles
+    const authorSameAs = [data.authorLinkedinUrl, data.authorTwitterUrl, data.authorUrl].filter(Boolean);
     article.author = clean({
       "@type": "Person",
       "name": data.authorName,
       "url": data.authorUrl || undefined,
       "jobTitle": data.authorTitle || undefined,
-      "worksFor": { "@id": `${data.brandDomain}/#organization` }
+      "worksFor": { "@id": `${data.brandDomain}/#organization` },
+      "sameAs": authorSameAs.length > 0 ? authorSameAs : undefined
     });
   } else {
     // Fall back to Organization as author with name (Google requires name on author)
@@ -425,10 +447,13 @@ function maybeAddFAQ(graph, data) {
 // Collect about entities from topic fields (supports new topics array and legacy fields)
 function collectAboutEntities(data) {
   const aboutEntities = [];
-  // New dynamic topics array
+  // New dynamic topics array — collect both Wikipedia and Wikidata URLs
   if (data.topics && data.topics.length > 0) {
     data.topics.forEach(t => {
-      if (t.name) aboutEntities.push({ name: t.name, sameAs: t.wiki });
+      if (t.name) {
+        const sameAs = [t.wiki, t.wikidata].filter(Boolean);
+        aboutEntities.push({ name: t.name, sameAs: sameAs.length === 1 ? sameAs[0] : sameAs.length > 1 ? sameAs : undefined });
+      }
     });
   }
   // Legacy fallback for old topic1/topic2 fields

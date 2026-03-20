@@ -315,6 +315,11 @@ export default function SchemaForm({ data, onChange, template }) {
         <Field label="YouTube" name="youtubeUrl" value={data.youtubeUrl} onChange={set} placeholder="https://youtube.com/@acmeplumbing" half />
         <Field label="LinkedIn" name="linkedinUrl" value={data.linkedinUrl} onChange={set} placeholder="https://linkedin.com/company/acmeplumbing" half />
         <Field label="Yelp" name="yelpUrl" value={data.yelpUrl} onChange={set} placeholder="https://yelp.com/biz/acme-plumbing" half />
+        <Field label="TikTok" name="tiktokUrl" value={data.tiktokUrl} onChange={set} placeholder="https://tiktok.com/@acmeplumbing" half />
+        <Field label="Pinterest" name="pinterestUrl" value={data.pinterestUrl} onChange={set} placeholder="https://pinterest.com/acmeplumbing" half />
+        <Field label="Wikidata" name="wikidataUrl" value={data.wikidataUrl} onChange={set} placeholder="https://www.wikidata.org/wiki/Q12345" half />
+        <Field label="Foursquare" name="foursquareUrl" value={data.foursquareUrl} onChange={set} placeholder="https://foursquare.com/v/acme-plumbing/..." half />
+        <Field label="Apple Business Connect" name="appleBusinessUrl" value={data.appleBusinessUrl} onChange={set} placeholder="https://maps.apple.com/place?q=..." half />
       </Section>
 
       {/* Single Location */}
@@ -329,6 +334,7 @@ export default function SchemaForm({ data, onChange, template }) {
           )}
           <Field label="ZIP Code" name="locationZip" value={data.locationZip} onChange={set} placeholder="37201" half />
           <Field label="Local Phone" name="locationPhone" value={data.locationPhone} onChange={set} placeholder="+16155551234" half />
+          <Field label="Location Email" name="locationEmail" value={data.locationEmail} onChange={set} placeholder="nashville@acmeplumbing.com" half />
           <Field label="Latitude" name="locationLat" value={data.locationLat} onChange={set} placeholder="36.1627" half />
           <Field label="Longitude" name="locationLng" value={data.locationLng} onChange={set} placeholder="-86.7816" half />
           <Field label="Location Page URL" name="locationPageUrl" value={data.locationPageUrl} onChange={set} placeholder="https://acmeplumbing.com/locations/nashville-tn/" />
@@ -488,6 +494,8 @@ export default function SchemaForm({ data, onChange, template }) {
           <Field label="Service Page URL" name="servicePageUrl" value={data.servicePageUrl} onChange={set} placeholder="https://acmeplumbing.com/services/roof-replacement/" />
           <Field label="Service Image URL" name="serviceImage" value={data.serviceImage} onChange={set} placeholder="https://acmeplumbing.com/roof-replacement.jpg" />
           <Field label="Service Wikipedia URL" name="serviceWiki" value={data.serviceWiki} onChange={set} placeholder="https://en.wikipedia.org/wiki/Roofing" hint="Optional — helps Google understand what your service is" />
+          <Field label="Starting Price" name="servicePrice" value={data.servicePrice} onChange={set} placeholder="199.00" half hint="Optional — creates an Offer with this price" />
+          <Field label="Price Currency" name="servicePriceCurrency" value={data.servicePriceCurrency} onChange={set} placeholder="USD" half hint="ISO currency code (default: USD)" />
         </Section>
       )}
 
@@ -615,6 +623,12 @@ export default function SchemaForm({ data, onChange, template }) {
             <Field label="Date Modified" name="dateModified" value={data.dateModified} onChange={set} type="date" half hint="Time will be added automatically for ISO 8601" />
           </>
         )}
+        {(showBlog || tmpl.id === 'faq') && (
+          <>
+            <Field label="Word Count" name="wordCount" value={data.wordCount} onChange={set} placeholder="1500" half hint="Approximate word count of the article" />
+            <Field label="Article Section" name="articleSection" value={data.articleSection} onChange={set} placeholder="Roofing Tips" half hint="Category or section this article belongs to" />
+          </>
+        )}
       </Section>
 
       {/* Author (for blog) */}
@@ -623,6 +637,8 @@ export default function SchemaForm({ data, onChange, template }) {
           <Field label="Author Name" name="authorName" value={data.authorName} onChange={set} placeholder="John Smith" half />
           <Field label="Author URL" name="authorUrl" value={data.authorUrl} onChange={set} placeholder="https://acmeplumbing.com/team/john/" half />
           <Field label="Author Title" name="authorTitle" value={data.authorTitle} onChange={set} placeholder="Senior Roofing Specialist" half />
+          <Field label="Author LinkedIn" name="authorLinkedinUrl" value={data.authorLinkedinUrl} onChange={set} placeholder="https://linkedin.com/in/johnsmith" half />
+          <Field label="Author X / Twitter" name="authorTwitterUrl" value={data.authorTwitterUrl} onChange={set} placeholder="https://x.com/johnsmith" half />
           <Field label="Blog Section Name" name="blogSectionName" value={data.blogSectionName} onChange={set} placeholder="Blog" half />
           <Field label="Blog Section Slug" name="blogSectionSlug" value={data.blogSectionSlug} onChange={set} placeholder="blog" half />
         </Section>
@@ -631,10 +647,10 @@ export default function SchemaForm({ data, onChange, template }) {
       {/* Topic Entities — dynamic list */}
       <Section title="Topic Entities" defaultOpen={false} sectionTip={SECTION_TIPS.topicEntities}>
         <div className="sm:col-span-2 space-y-3">
-          <p className="text-xs text-gray-500">Connect your content to the Knowledge Graph. Wikipedia links increase AI citation rates by up to 2.5x.</p>
+          <p className="text-xs text-gray-500">Connect your content to the Knowledge Graph. Wikipedia and Wikidata links increase AI citation rates by up to 2.5x.</p>
           {getTopics().map((topic, i) => (
             <div key={i} className="flex items-start gap-2">
-              <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div className="flex-1 grid grid-cols-1 sm:grid-cols-3 gap-2">
                 <input
                   placeholder={`Topic ${i + 1} Name`}
                   value={topic.name || ''}
@@ -645,6 +661,12 @@ export default function SchemaForm({ data, onChange, template }) {
                   placeholder="https://en.wikipedia.org/wiki/..."
                   value={topic.wiki || ''}
                   onChange={e => setTopic(i, 'wiki', e.target.value)}
+                  className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+                />
+                <input
+                  placeholder="https://www.wikidata.org/wiki/Q..."
+                  value={topic.wikidata || ''}
+                  onChange={e => setTopic(i, 'wikidata', e.target.value)}
                   className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
                 />
               </div>
@@ -706,7 +728,8 @@ export default function SchemaForm({ data, onChange, template }) {
       {showFaq && (
         <Section title="FAQ Questions & Answers" defaultOpen={tmpl.id === 'faq'} sectionTip={SECTION_TIPS.faq}>
           <div className="sm:col-span-2 space-y-3">
-            <p className="text-xs text-gray-500">Add FAQ questions to any page type. FAQ schema helps AI search engines extract your content and can generate rich results for eligible sites.</p>
+            <p className="text-xs text-gray-500">Add FAQ questions to any page type. FAQ schema helps AI search engines (ChatGPT, Perplexity, Google AI Overviews) extract and cite your content directly.</p>
+            <p className="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">Note: As of 2025, Google FAQ rich results are limited to government and health authority sites. However, FAQ schema still significantly benefits AI search extraction and citation.</p>
             {(data.faqs || []).map((faq, i) => (
               <div key={i} className="border border-gray-200 rounded-lg p-3 bg-gray-50/50">
                 <div className="flex justify-between items-center mb-2">
