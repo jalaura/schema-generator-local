@@ -46,15 +46,18 @@ function buildSameAs(data) {
 
 function buildOrganization(data, { applyBusinessType = true } = {}) {
   let type = 'Organization';
+  let additionalType;
   if (applyBusinessType) {
     const bt = data.businessType || 'Organization';
-    // Use an array like ["FlooringContractor", "LocalBusiness"] so that
-    // Google's Rich Results Test recognises the entity as a valid
-    // LocalBusiness for review-snippet / aggregateRating support.
-    // Using the specific subtype alone causes a critical "Invalid object
-    // type for field '<parent_node>'" error on aggregateRating.
+    // Use "LocalBusiness" as @type with the specific subtype in
+    // additionalType. Using a multi-type array like
+    // ["FlooringContractor", "LocalBusiness"] causes Google to flag
+    // "Duplicate field url" since both types define url.  Using the
+    // subtype alone causes "Invalid object type" on aggregateRating.
+    // additionalType preserves the specific subtype without either issue.
     if (bt !== 'Organization' && bt !== 'LocalBusiness') {
-      type = [bt, 'LocalBusiness'];
+      type = 'LocalBusiness';
+      additionalType = `https://schema.org/${bt}`;
     } else if (bt !== 'Organization') {
       type = bt;
     }
@@ -62,6 +65,7 @@ function buildOrganization(data, { applyBusinessType = true } = {}) {
 
   const org = {
     "@type": type,
+    ...(additionalType ? { "additionalType": additionalType } : {}),
     "@id": `${data.brandDomain}/#organization`,
     "name": data.brandName,
     "url": data.brandDomain,

@@ -32,7 +32,14 @@ export function validateSchema(json, templateId) {
     const rawType = entity['@type'];
     // Handle array @type (e.g. ["RoofingContractor", "LocalBusiness"])
     const type = Array.isArray(rawType) ? rawType[0] : rawType;
-    const typeLabel = Array.isArray(rawType) ? rawType.join(', ') : rawType;
+    // Show additionalType in the label when present (e.g. "LocalBusiness (FlooringContractor)")
+    const additionalType = entity['additionalType'];
+    const additionalLabel = additionalType && typeof additionalType === 'string'
+      ? additionalType.replace('https://schema.org/', '')
+      : null;
+    const typeLabel = Array.isArray(rawType)
+      ? rawType.join(', ')
+      : (additionalLabel ? `${rawType} (${additionalLabel})` : rawType);
     const prefix = typeLabel || 'Unknown entity';
 
     if (!rawType) {
