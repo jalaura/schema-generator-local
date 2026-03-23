@@ -577,7 +577,7 @@ export function generateHomepage(data) {
     "@type": "WebPage",
     "@id": `${data.brandDomain}/#webpage`,
     "url": data.brandDomain,
-    "name": `${data.brandName}${data.brandDescription ? ' — ' + data.brandDescription : ''}`,
+    "name": data.brandName,
     "isPartOf": { "@id": `${data.brandDomain}/#website` },
     "about": { "@id": `${data.brandDomain}/#organization` },
     ...(bc ? { "breadcrumb": { "@id": `${data.brandDomain}/#breadcrumb` } } : {})
