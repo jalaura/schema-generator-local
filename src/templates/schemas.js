@@ -48,12 +48,14 @@ function buildOrganization(data, { applyBusinessType = true } = {}) {
   let type = 'Organization';
   if (applyBusinessType) {
     const bt = data.businessType || 'Organization';
-    // For the homepage Organization entity, use just the specific subtype
-    // (e.g. "FlooringContractor") — it already inherits from LocalBusiness
-    // in Schema.org's type hierarchy. Using an array like
-    // ["FlooringContractor", "LocalBusiness"] causes Google's Rich Results
-    // Test to flag "Duplicate field url" since both types define url.
-    if (bt !== 'Organization') {
+    // Use an array like ["FlooringContractor", "LocalBusiness"] so that
+    // Google's Rich Results Test recognises the entity as a valid
+    // LocalBusiness for review-snippet / aggregateRating support.
+    // Using the specific subtype alone causes a critical "Invalid object
+    // type for field '<parent_node>'" error on aggregateRating.
+    if (bt !== 'Organization' && bt !== 'LocalBusiness') {
+      type = [bt, 'LocalBusiness'];
+    } else if (bt !== 'Organization') {
       type = bt;
     }
   }
