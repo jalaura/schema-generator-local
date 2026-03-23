@@ -226,13 +226,10 @@ function buildLocalBusiness(data, loc = {}) {
       "@type": "OfferCatalog",
       "name": "Services",
       "itemListElement": services.map(s => clean({
-        "@type": "Offer",
-        "itemOffered": clean({
-          "@type": "Service",
-          "name": s.name,
-          "description": s.description || undefined,
-          "url": s.url || undefined
-        })
+        "@type": "Service",
+        "name": s.name,
+        "description": s.description || undefined,
+        "url": s.url || undefined
       }))
     };
   }
@@ -515,13 +512,10 @@ export function generateHomepage(data) {
         "@type": "OfferCatalog",
         "name": "Services",
         "itemListElement": services.map(s => clean({
-          "@type": "Offer",
-          "itemOffered": clean({
-            "@type": "Service",
-            "name": s.name,
-            "description": s.description || undefined,
-            "url": s.url || undefined
-          })
+          "@type": "Service",
+          "name": s.name,
+          "description": s.description || undefined,
+          "url": s.url || undefined
         }))
       };
     }
