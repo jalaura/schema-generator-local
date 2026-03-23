@@ -47,13 +47,15 @@ export function validateSchema(json, templateId) {
       warnings.push({ field: prefix, message: 'Missing identifier — this is auto-generated when you fill in the Website URL' });
     }
 
-    // Check if this is a homepage hybrid (Organization + LocalBusiness type)
-    const isHomepageHybrid = Array.isArray(rawType) && rawType.includes('LocalBusiness')
-      && entity['@id'] && entity['@id'].includes('#organization');
+    // Check if this is a homepage entity using a specific business type (e.g. FlooringContractor)
+    // on the Organization @id — validate as Organization, not LocalBusiness
+    const isHomepageHybrid = entity['@id'] && entity['@id'].includes('#organization')
+      && type !== 'Organization' && type !== 'WebSite' && type !== 'WebPage'
+      && type !== 'Article' && type !== 'BreadcrumbList' && type !== 'FAQPage' && type !== 'Service';
 
     // Type-specific validation
     if (isHomepageHybrid) {
-      // Hybrid Organization + LocalBusiness on homepage — validate as Organization
+      // Homepage with specific business type — validate as Organization
       validateOrganization(entity, prefix, errors, warnings);
     } else if (type === 'Organization') {
       validateOrganization(entity, prefix, errors, warnings);

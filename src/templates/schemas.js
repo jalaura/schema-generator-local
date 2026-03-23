@@ -48,10 +48,13 @@ function buildOrganization(data, { applyBusinessType = true } = {}) {
   let type = 'Organization';
   if (applyBusinessType) {
     const bt = data.businessType || 'Organization';
-    if (bt === 'LocalBusiness') {
-      type = 'LocalBusiness';
-    } else if (bt !== 'Organization') {
-      type = [bt, 'LocalBusiness'];
+    // For the homepage Organization entity, use just the specific subtype
+    // (e.g. "FlooringContractor") — it already inherits from LocalBusiness
+    // in Schema.org's type hierarchy. Using an array like
+    // ["FlooringContractor", "LocalBusiness"] causes Google's Rich Results
+    // Test to flag "Duplicate field url" since both types define url.
+    if (bt !== 'Organization') {
+      type = bt;
     }
   }
 
