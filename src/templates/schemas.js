@@ -225,11 +225,15 @@ function buildLocalBusiness(data, loc = {}) {
     biz.hasOfferCatalog = {
       "@type": "OfferCatalog",
       "name": "Services",
-      "itemListElement": services.map(s => clean({
-        "@type": "Service",
-        "name": s.name,
-        "description": s.description || undefined,
-        "url": s.url || undefined
+      "itemListElement": services.map((s, idx) => clean({
+        "@type": "ListItem",
+        "position": idx + 1,
+        "item": clean({
+          "@type": "Service",
+          "name": s.name,
+          "description": s.description || undefined,
+          "url": s.url || undefined
+        })
       }))
     };
   }
@@ -239,7 +243,8 @@ function buildLocalBusiness(data, loc = {}) {
     biz.aggregateRating = {
       "@type": "AggregateRating",
       "ratingValue": data.aggregateRatingValue,
-      "reviewCount": data.aggregateRatingCount
+      "reviewCount": data.aggregateRatingCount,
+      "bestRating": "5"
     };
   }
 
@@ -511,11 +516,15 @@ export function generateHomepage(data) {
       org.hasOfferCatalog = {
         "@type": "OfferCatalog",
         "name": "Services",
-        "itemListElement": services.map(s => clean({
-          "@type": "Service",
-          "name": s.name,
-          "description": s.description || undefined,
-          "url": s.url || undefined
+        "itemListElement": services.map((s, idx) => clean({
+          "@type": "ListItem",
+          "position": idx + 1,
+          "item": clean({
+            "@type": "Service",
+            "name": s.name,
+            "description": s.description || undefined,
+            "url": s.url || undefined
+          })
         }))
       };
     }
@@ -525,7 +534,8 @@ export function generateHomepage(data) {
       org.aggregateRating = {
         "@type": "AggregateRating",
         "ratingValue": data.aggregateRatingValue,
-        "reviewCount": data.aggregateRatingCount
+        "reviewCount": data.aggregateRatingCount,
+        "bestRating": "5"
       };
     }
 
