@@ -137,6 +137,11 @@ function buildOrganization(data, { applyBusinessType = true } = {}) {
     org.knowsAbout = data.knowsAbout.filter(Boolean);
   }
 
+  // Add priceRange when entity is a LocalBusiness
+  if (type === 'LocalBusiness' && data.priceRange) {
+    org.priceRange = data.priceRange;
+  }
+
   return org;
 }
 
