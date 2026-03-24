@@ -290,6 +290,9 @@ export default function SchemaForm({ data, onChange, template }) {
         <Field label="Phone" name="brandPhone" value={data.brandPhone} onChange={set} placeholder="+18005551234" hint="International format: +1 then 10 digits" half />
         <Field label="Email" name="brandEmail" value={data.brandEmail} onChange={set} placeholder="info@acmeplumbing.com" half />
         <Field label="Year Established" name="foundingDate" value={data.foundingDate} onChange={set} placeholder="2010" half />
+        {isBusinessType && !showGBP && !showHomepageBizFields && (
+          <Field label="Price Range" name="priceRange" value={data.priceRange} onChange={set} placeholder="$$" half hint="$, $$, $$$, or $$$$" />
+        )}
       </Section>
 
       {/* HQ Address */}
