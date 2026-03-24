@@ -28,10 +28,14 @@ function normalizeUrl(url) {
 
 function toISODateTime(dateStr) {
   if (!dateStr) return undefined;
-  // Already has time component — return as-is
-  if (dateStr.includes('T')) return dateStr;
-  // Date-only (YYYY-MM-DD) — append midnight with no offset
-  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return `${dateStr}T00:00:00`;
+  // Already has time component — ensure timezone is present
+  if (dateStr.includes('T')) {
+    // If no timezone offset (Z, +HH:MM, -HH:MM), append UTC
+    if (!/[Z]$/.test(dateStr) && !/[+-]\d{2}:\d{2}$/.test(dateStr)) return `${dateStr}+00:00`;
+    return dateStr;
+  }
+  // Date-only (YYYY-MM-DD) — append midnight UTC
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return `${dateStr}T00:00:00+00:00`;
   return dateStr;
 }
 
